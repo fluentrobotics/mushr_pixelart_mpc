@@ -1,4 +1,4 @@
-# Model Predictive Control
+# mushr_pixelart_mpc
 
 This repository hosts the MPC for the MuSHR Pixel Art Project. This MPC is built on [mushr_rhc](https://github.com/prl-mushr/mushr_rhc).
 
