@@ -1,8 +1,6 @@
-[![Build Status](https://dev.azure.com/prl-mushr/mushr_rhc/_apis/build/status/prl-mushr.mushr_rhc?branchName=master)](https://dev.azure.com/prl-mushr/mushr_rhc/_build/latest?definitionId=1&branchName=master)
+# Model Predictive Control
 
-# Receding Horizon Control
-
-This module hosts the RHC controller first implemented on MuSHR stack. It is a model predictive contoller that plans to waypoints from a goal (instead of a reference trajectory). This controller is suitable for cars that don't have a planning module, but want simple MPC.
+This repository hosts the MPC for the MuSHR Pixel Art Project. This MPC is built on [mushr_rhc](https://github.com/prl-mushr/mushr_rhc).
 
 ## Tutorial
 The following [tutorial](https://mushr.io/tutorials/navigation/) goes through installing/running the car.
@@ -35,7 +33,6 @@ $ sudo apt install python-sklearn
 - Cost function (`librhc/cost`): Takes into account the cost-to-go, collisions and other information to produce a cost for a set of trajectories.
 - Model (`librhc/model`): A model of the car, currenly using the kinematic bicycle model.
 - Trajectory generation (`librhc/trajgen`): Strategies for generating trajectory libraries for MPC to evaluate.
-- Value function (`librhc/value`): Evaluation of positions of the car with resepct to a goal.
 - World Representation (`librhc/workrep`): An occupancy grid based representation for the map.
 
 ## `mushr_rhc_ros` ROS API

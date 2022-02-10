@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(mushr_rhc)
+project(mushr_pixelart_mpc)
 
 
 ## Find catkin macros and libraries
