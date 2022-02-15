@@ -10,7 +10,7 @@ import threading
 
 import rospy
 from ackermann_msgs.msg import AckermannDriveStamped
-from geometry_msgs.msg import Point, PoseStamped
+from geometry_msgs.msg import Point, PoseStamped, PoseArray
 from std_msgs.msg import ColorRGBA, Empty
 from std_srvs.srv import Empty as SrvEmpty
 from visualization_msgs.msg import Marker, MarkerArray
@@ -22,8 +22,6 @@ import rhctensor
 import utils
 import tf
 import numpy as np
-from geometry_msgs.msg import PoseStamped
-from nav_msgs.msg import Path
 
 
 class RHCNode(rhcbase.RHCBase):
@@ -148,7 +146,7 @@ class RHCNode(rhcbase.RHCBase):
         )
 
         self.path_sub = rospy.Subscriber(
-            rospy.get_param("~path_topic"), Path, self.path_cb, queue_size=1
+            rospy.get_param("~path_topic"), PoseArray, self.path_cb, queue_size=1
         )
 
         self.start_sub = rospy.Subscriber(
@@ -223,20 +221,28 @@ class RHCNode(rhcbase.RHCBase):
             self.traj_chosen_pub.publish(m)
 
     def path_cb(self, msg):
-            path = []
-            for pose_stamped in msg.poses:
-                point = pose_stamped.pose.position
-                orientation = pose_stamped.pose.orientation
-                theta = tf.transformations.euler_from_quaternion(
-                    [
-                        orientation.x,
-                        orientation.y,
-                        orientation.z,
-                        orientation.w,
-                    ]
-                )
-                path.append(np.array([point.x, point.y, theta[2]]))
-            self.path = np.array(path)
+        path = []
+        for pose in msg.poses:
+            point = pose.position
+            orientation = pose.orientation
+            theta = tf.transformations.euler_from_quaternion(
+                [
+                    orientation.x,
+                    orientation.y,
+                    orientation.z,
+                    orientation.w,
+                ]
+            )
+            path.append(np.array([point.x, point.y, theta[2]]))
+            goal = self.dtype(utils.rospose_to_posetup(pose))
+        self.path = np.array(path)
+        self.ready_event.wait()
+        if not self.rhctrl.set_goal(goal):
+            self.logger.err("That goal is unreachable, please choose another")
+            return
+        else:
+            self.logger.info("Goal set")
+        self.goal_event.set()
 
     def car_pose_cb(self, msg):
         """
