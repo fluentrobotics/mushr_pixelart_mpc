@@ -41,7 +41,7 @@
 			<arg name="racecar_color" value="-green-black" />
 		</include>
 
-        <node pkg="mushr_pixelart_mpc" type="rhcnode.py" name="rhcontroller" output="screen">
+        <node pkg="mushr_pixelart_mpc" type="rhcnode.py" name="rhcontroller">
             <env name="RHC_USE_CUDA" value="0" />
 
             <param name="inferred_pose_t" value="car_pose" />
@@ -63,7 +63,7 @@
 			<arg name="racecar_color" value="-red-white" />
 		</include>
 
-        <node pkg="mushr_pixelart_mpc" type="rhcnode.py" name="rhcontroller" output="screen">
+        <node pkg="mushr_pixelart_mpc" type="rhcnode.py" name="rhcontroller">
             <env name="RHC_USE_CUDA" value="0" />
 
             <param name="inferred_pose_t" value="car_pose" />
@@ -85,7 +85,7 @@
 			<arg name="racecar_color" value="-purple-gold" />
 		</include>
 
-        <node pkg="mushr_pixelart_mpc" type="rhcnode.py" name="rhcontroller" output="screen">
+        <node pkg="mushr_pixelart_mpc" type="rhcnode.py" name="rhcontroller">
             <env name="RHC_USE_CUDA" value="0" />
 
             <param name="inferred_pose_t" value="car_pose" />

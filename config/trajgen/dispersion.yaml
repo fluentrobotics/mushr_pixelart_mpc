@@ -2,12 +2,12 @@ T: 21
 K: 162
 trajgen_name: 'dispersion'
 horizon:
-    distance: 3.5
+    distance: 0.6
     time: -1.5
 trajgen:
     dispersion:
         samples: 9
-    desired_speed: 0.6
+    desired_speed: 0.4
     min_delta: -0.157
     max_delta: 0.157
 cost_fn:

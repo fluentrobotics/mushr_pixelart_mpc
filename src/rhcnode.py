@@ -22,6 +22,7 @@ import rhctensor
 import utils
 import tf
 import numpy as np
+import time
 
 
 class RHCNode(rhcbase.RHCBase):
@@ -45,8 +46,12 @@ class RHCNode(rhcbase.RHCBase):
         self.ready_event = threading.Event()
         self.events = [self.goal_event, self.map_metadata_event, self.ready_event]
         self.run = True
-
+        self.start_time = None
+        self.car_name = "car1"
         self.do_profile = self.params.get_bool("profile", default=False)
+        self.agents = []
+        self.agent_paths = []
+        self.own_index = None
 
     def start_profile(self):
         if self.do_profile:
@@ -70,7 +75,6 @@ class RHCNode(rhcbase.RHCBase):
 
         rate = rospy.Rate(50)
         self.logger.info("Initialized")
-
         while not rospy.is_shutdown() and self.run:
             ip = self.inferred_pose()
             next_traj, rollout = self.run_loop(ip, self.path, self.car_pose)
@@ -104,6 +108,8 @@ class RHCNode(rhcbase.RHCBase):
                 return None, None
             if ip is not None:
                 before = rospy.get_time()
+                self.rhctrl.cost.set_multi_agent_stuff(self.agents, self.agent_paths, self.own_index)  ## CHANGED -> Send multi-agent stuff related info straight to cost
+                self.rhctrl.cost.time_now = time.time() - self.start_time  # set the time in rhctrl
                 result = self.rhctrl.step(ip, path, car_pose)
                 total = rospy.get_time() - before
                 return result
@@ -120,7 +126,7 @@ class RHCNode(rhcbase.RHCBase):
         rospy.Service("~reset/hard", SrvEmpty, self.srv_reset_hard)
 
         car_name = self.params.get_str("car_name", default="car")
-
+        self.car_name = car_name
         rospy.Subscriber(
             "/move_base_simple/goal", PoseStamped, self.cb_goal, queue_size=1
         )
@@ -161,6 +167,83 @@ class RHCNode(rhcbase.RHCBase):
 
         # For the experiment framework, need indicators to listen on
         self.expr_at_goal = rospy.Publisher("experiments/finished", Empty, queue_size=1)
+        
+        ## CHANGED
+        self.check_new_agents()
+
+    ## CHANGED ----
+    def check_new_agents(self):
+        count = 0
+        name_list = []
+        while(count < 4):
+            try:
+                topics = rospy.get_published_topics()
+                for topic in topics:
+                    if(topic[1] == "geometry_msgs/PoseStamped"):
+                        name = topic[0].split("/")
+                        pose_name = "car_pose"
+                        ctrl_name = "mux/ackermann_cmd_mux/input/navigation"
+                        wp_name = "waypoints"
+                        if(name[2] == pose_name):
+                            skip = False
+                            for known_name in name_list:
+                                if known_name == name[1]:
+                                    skip = True
+                                    break
+                                else:
+                                    skip = False
+
+                            if(not skip):
+                                if(self.car_name == name[1]):
+                                    self.own_index = count
+                                self.agents.append(np.zeros(5))  # an agent has 5 attributes: x, y, theta, speed, steering
+                                self.agent_paths.append([])  # create empty lists corresponding to the path
+                                sub_other_pose = rospy.Subscriber("/" + name[1] + "/" + pose_name, PoseStamped,
+                                                                  self.cb_general_pose, count, queue_size=1)
+                                sub_other_out = rospy.Subscriber("/" + name[1] + "/" + ctrl_name, AckermannDriveStamped,
+                                                                 self.cb_general_ctrl,  count, queue_size=1)
+                                sub_other_wp = rospy.Subscriber("/" + name[1] + "/" + wp_name, PoseArray,
+                                                                self.cb_general_path,  count, queue_size=10)
+                                count += 1
+                                name_list.append(name[1])  # add name to name list
+                                print("found car", name[1])
+            except:
+                time.sleep(1)
+
+    def cb_general_pose(self, msg, i):
+        theta = tf.transformations.euler_from_quaternion(
+            [
+                msg.pose.orientation.x,
+                msg.pose.orientation.y,
+                msg.pose.orientation.z,
+                msg.pose.orientation.w,
+            ]
+        )
+        self.agents[i][:3] = [msg.pose.position.x, msg.pose.position.y, theta[2]]
+
+    def cb_general_ctrl(self, msg, i):
+        self.agents[i][3:] = [msg.drive.speed, msg.drive.steering_angle]
+
+    def cb_general_path(self, msg, i):
+        path = []
+        time_stamp = 0
+        time_step = 1.0  # calced
+        for pose in msg.poses:
+            point = pose.position
+            orientation = pose.orientation 
+            theta = tf.transformations.euler_from_quaternion(
+                [
+                    orientation.x,
+                    orientation.y,
+                    orientation.z,
+                    orientation.w,
+                ]
+            )
+            path.append([point.x, point.y, theta[2], time_stamp])
+            time_stamp += point.z*1e3*time_step
+        path = np.array(path)
+        self.agent_paths[i] = path
+    ## CHANGED ---
 
     def srv_reset_hard(self, msg):
         """
@@ -220,11 +303,15 @@ class RHCNode(rhcbase.RHCBase):
             m.scale.x = 0.05
             self.traj_chosen_pub.publish(m)
 
+
+    # CHANGED
     def path_cb(self, msg):
         path = []
+        time_stamp = 0
+        time_step = 1.0  # calced
         for pose in msg.poses:
             point = pose.position
-            orientation = pose.orientation
+            orientation = pose.orientation 
             theta = tf.transformations.euler_from_quaternion(
                 [
                     orientation.x,
@@ -233,9 +320,11 @@ class RHCNode(rhcbase.RHCBase):
                     orientation.w,
                 ]
             )
-            path.append(np.array([point.x, point.y, theta[2]]))
+            path.append(np.array([point.x, point.y, theta[2], time_stamp]))
+            time_stamp += point.z*1e3*time_step
             goal = self.dtype(utils.rospose_to_posetup(pose))
         self.path = np.array(path)
+        self.start_time = time.time()
         self.ready_event.wait()
         if not self.rhctrl.set_goal(goal):
             self.logger.err("That goal is unreachable, please choose another")

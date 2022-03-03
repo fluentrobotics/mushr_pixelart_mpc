@@ -33,7 +33,7 @@ class MPC:
         # Rollouts buffer, the main engine of our computation
         self.rollouts = self.dtype(self.K, self.T, self.NPOS)
 
-        xy_thresh = self.params.get_float("xy_threshold", default=0.5)
+        xy_thresh = self.params.get_float("xy_threshold", default=0.1)
         self.goal_threshold = self.dtype([xy_thresh, xy_thresh])
         self.desired_speed = self.params.get_float("trajgen/desired_speed", default=1.0)
         self.dist_horizon = utils.get_distance_horizon(self.params)
@@ -68,10 +68,7 @@ class MPC:
         # For each K trial, the first position is at the current position
         self.rollouts[:, 0] = state.expand_as(self.rollouts[:, 0])
 
-        v = min(
-            self.desired_speed,
-            self.desired_speed * (self.dist_to_goal(state) / (self.dist_horizon)),
-        )
+        v = self.desired_speed #min( self.desired_speed, self.desired_speed * (self.dist_to_goal(state) / (self.dist_horizon)))
         trajs = self.trajgen.get_control_trajectories(v)
         assert trajs.size() == (self.K, self.T, 2)
 
@@ -81,6 +78,7 @@ class MPC:
 
         costs = self.cost.apply(self.rollouts, g, path, car_pose)
         result, idx = self.trajgen.generate_control(trajs, costs)
+        result[0,0] = max(0.0, result[0,0]) # prevent reverse
         return result, self.rollouts[idx]
 
     def set_goal(self, goal):

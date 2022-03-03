@@ -173,6 +173,8 @@ class Dispersion:
         """
         # scale the velocity but preserve sign
         self.ctrls[:, :, 0] = velocity * np.sign(self.ctrls[:, :, 0])
+        # self.ctrls[:,:,0][self.ctrls[:,:,0] < 0] = 0  # prevent reverse
+        # print(self.ctrls[:,:,0])
         return self.ctrls
 
     def generate_control(self, controls, costs):
