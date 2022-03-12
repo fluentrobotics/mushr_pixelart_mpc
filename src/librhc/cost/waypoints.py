@@ -188,7 +188,7 @@ class Waypoints:
 
         x_ref, y_ref, theta_ref, time_ref = path[index]
 
-        time_array = torch.from_numpy(np.arange(time_ref, time_ref + 1.5, (1.5/21.0)))
+        time_array = torch.from_numpy(np.arange(time_ref + 1.5, time_ref , -(1.5/21.0)))
         d_ref = self.des_speed*(time_array - self.time_now)
 
         cross_track_error = np.abs(
@@ -202,7 +202,6 @@ class Waypoints:
             (poses[:, :, 0] - x_ref) * np.cos(theta_ref)
             + (poses[:, :, 1] - y_ref) * np.sin(theta_ref)
         )
-        
         time_error = np.zeros_like(along_track_error)
         for i in range(self.K):
             time_error[i,:] = d_ref - along_track_error[i,:]
@@ -218,11 +217,11 @@ class Waypoints:
         winding_cost = self.winding_cost(poses)
 
         # multiply weights
-        cross_track_error *= self.params.get_int("cte_weight", default=1200)
-        along_track_error *= self.params.get_int("ate_weight", default=1200)
-        heading_error *= self.params.get_int("he_weight", default=100)
-        time_error *= 0
-        winding_cost *= 1200
+        cross_track_error *= 1 #self.params.get_int("cte_weight", default=1200)
+        along_track_error *= 0 #self.params.get_int("ate_weight", default=1200)
+        heading_error *= 1 #self.params.get_int("he_weight", default=100)
+        time_error *= 0.5
+        winding_cost *= 0
 
         result = cross_track_error.add(along_track_error).add(heading_error).add(time_error).add(winding_cost)
 

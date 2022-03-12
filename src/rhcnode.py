@@ -90,12 +90,25 @@ class RHCNode(rhcbase.RHCBase):
                 self.publish_traj(next_traj, rollout)
                 # For experiments. If the car is at the goal, notify the
                 # experiment tool
+                self.publish_expr_state()
                 if self.rhctrl.at_goal(self.inferred_pose()):
                     self.expr_at_goal.publish(Empty())
                     self.goal_event.clear()
             rate.sleep()
 
         self.end_profile()
+
+    def publish_expr_state(self):
+        output_msg = PoseStamped()
+        output_msg.header.stamp = rospy.Time.now()
+        output_msg.header.frame_id = "/map";
+        output_msg.pose.position.x = 0
+        output_msg.pose.position.y = 0
+        output_msg.pose.position.z = float(self.rhctrl.at_goal(self.inferred_pose()));
+        output_msg.pose.orientation.x = 0
+        output_msg.pose.orientation.y = np.linalg.norm(self.rhctrl.goal[:2].sub(self.inferred_pose()[:2]).abs_())
+        output_msg.pose.orientation.z = self.rhctrl.cost.time_now/self.path[-1,3];
+        self.publish_stats.publish(output_msg);
 
     def run_loop(self, ip, path, car_pose):
         self.goal_event.wait()
@@ -167,7 +180,7 @@ class RHCNode(rhcbase.RHCBase):
 
         # For the experiment framework, need indicators to listen on
         self.expr_at_goal = rospy.Publisher("experiments/finished", Empty, queue_size=1)
-        
+        self.publish_stats = rospy.Publisher("cur_goal", PoseStamped, queue_size=1)
         ## CHANGED
         self.check_new_agents()
 
