@@ -131,7 +131,7 @@ class Waypoints:
         all_poses = self.propagate_forward()
         winding_cost = np.zeros(self.K)
         t = np.arange(0, 1.5, (1.5/21.0)) + self.time_now  # this needs to be parameterized
-        expected_winding = np.zeros((self.T, 4))
+        expected_winding = np.zeros((self.T, 4))  # TODO don't hardcode number of agents
         for i in range(self.T):
             expected_winding[i] = self.get_winding_number(t[i], None)
 
@@ -145,6 +145,21 @@ class Waypoints:
         #     winding_cost.append(cost)
         winding_cost = np.array(winding_cost)
         return torch.from_numpy(np.abs(winding_cost))
+
+    def agent_collisions(self, torch_poses):
+        N = len(self.agents)
+        own_poses = np.array(torch_poses[:,:,:2])
+        all_poses = self.propagate_forward()
+        collisions = np.zeros(self.K)
+        thres = 0.5  # TODO parameterize?
+
+        for k in range(len(own_poses)):
+            for t in range(len(own_poses[k])):
+                for j in range(N):
+                    if j != self.own_index and np.linalg.norm(own_poses[k][t] - all_poses[j][t]) < thres:
+                        collisions[k] += 1
+
+        return torch.from_numpy(collisions)
 
     def apply(self, poses, goal, path, car_pose):
         """
@@ -216,14 +231,17 @@ class Waypoints:
 
         winding_cost = self.winding_cost(poses)
 
+        agent_collision_cost = self.agent_collisions(poses)
+
         # multiply weights
         cross_track_error *= 1 #self.params.get_int("cte_weight", default=1200)
         along_track_error *= 0 #self.params.get_int("ate_weight", default=1200)
         heading_error *= 1 #self.params.get_int("he_weight", default=100)
         time_error *= 0.5
         winding_cost *= 0
+        agent_collision_cost *= 1000
 
-        result = cross_track_error.add(along_track_error).add(heading_error).add(time_error).add(winding_cost)
+        result = cross_track_error.add(along_track_error).add(heading_error).add(time_error).add(winding_cost).add(agent_collision_cost)
 
         colliding = collision_cost.nonzero()
         result[colliding] = 1000000000
