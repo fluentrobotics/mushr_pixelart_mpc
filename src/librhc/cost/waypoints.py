@@ -151,7 +151,7 @@ class Waypoints:
         own_poses = np.array(torch_poses[:,:,:2])
         all_poses = self.propagate_forward()
         collisions = np.zeros(self.K)
-        thres = 0.5  # TODO parameterize?
+        thres = 0.4  # TODO parameterize?
 
         for k in range(len(own_poses)):
             for t in range(len(own_poses[k])):
