@@ -106,19 +106,13 @@ class Dispersion:
                 ms_ctrls[:, :, 0] = desired_speed
                 ms_ctrls[:, :, 1] = ms_deltas
             else:
-                zero_idx = 0
-                ms_ctrls = self.dtype(N_mother + 1, self.T, self.NCTRL)
+                ms_ctrls = self.dtype(N_mother, self.T, self.NCTRL)
                 ms_ctrls[:, :, 0] = desired_speed
-                ms_ctrls[1:, :, 1] = ms_deltas
-                ms_ctrls[0, :, 1] = 0
+                ms_ctrls[:, :, 1] = ms_deltas
 
-            neg_ms_ctrls = torch.clone(ms_ctrls)
-            neg_ms_ctrls[:, :, 0] = -1 * neg_ms_ctrls[:, :, 0]
             ms_poses = self._rollout_ms(ms_ctrls)
-            neg_ms_poses = self._rollout_ms(neg_ms_ctrls)
             pos_ctrls = self._prune_mother_set(zero_idx, ms_ctrls, ms_poses)
-            neg_ctrls = self._prune_mother_set(zero_idx, neg_ms_ctrls, neg_ms_poses)
-            self.ctrls = torch.cat((neg_ctrls,pos_ctrls))
+            self.ctrls = pos_ctrls
             torch.save(self.ctrls, dispersion_path)
 
     def _rollout_ms(self, ms_ctrls):
@@ -140,7 +134,7 @@ class Dispersion:
         def hausdorff(a, b):
             return max(directed_hausdorff(a, b)[0], directed_hausdorff(b, a)[0])
 
-        prune_size = self.K / 2
+        prune_size = self.K
 
         for _ in range(prune_size - 1):
             max_i, max_dist = 0, 0
@@ -162,7 +156,7 @@ class Dispersion:
             visited[max_i] = ms_poses[max_i]
 
         assert len(visited) == prune_size
-        ctrls = self.dtype(self.K / 2, self.T, self.NCTRL)
+        ctrls = self.dtype(self.K, self.T, self.NCTRL)
         return ctrls.copy_(ms_ctrls[visited.keys()])
 
     def get_control_trajectories(self, velocity):
