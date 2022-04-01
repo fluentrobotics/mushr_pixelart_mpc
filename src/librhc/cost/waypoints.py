@@ -118,7 +118,7 @@ class Waypoints:
             t = np.arange(0, 1.5, (1.5/21.0))
             # K = m.tan(agents[4])/self.wheel_base
             # angle = agents[2] + agents[3]*K*t
-            vec = np.array([np.cos(agent[2]), np.sin(agent[2])])
+            vec = agent[3]*np.array([np.cos(agent[2]), np.sin(agent[2])])
             x = agent[0] + vec[0]*t
             y = agent[1] + vec[1]*t
             poses[i][:, 0] = x
@@ -234,12 +234,17 @@ class Waypoints:
         agent_collision_cost = self.agent_collisions(poses)
 
         # multiply weights
-        cross_track_error *= 1 #self.params.get_int("cte_weight", default=1200)
-        along_track_error *= 0 #self.params.get_int("ate_weight", default=1200)
-        heading_error *= 1 #self.params.get_int("he_weight", default=100)
-        time_error *= 0.5
-        winding_cost *= 0
-        agent_collision_cost *= 1000
+        print("cross_track_cost: ", cross_track_error)
+        print("time_cost: ", time_error)
+        print("winding cost: ", winding_cost)
+        print("collision cost: ", agent_collision_cost)
+        cross_track_error *= self.params.get_int("/car1/rhcontroller/control/cte_weight", default=100)  
+        along_track_error *= self.params.get_int("/car1/rhcontroller/control/ate_weight", default=100)
+        heading_error *= self.params.get_int("/car1/rhcontroller/control/he_weight", default= 10)
+        time_error *= self.params.get_int("/car1/rhcontroller/control/time_weight", default = 10)
+        winding_cost *= self.params.get_int("/car1/rhcontroller/control/winding_weight", default= 10)
+        # print(self.params.get_int("/car1/rhcontroller/control/winding_weight", default= 10))
+        agent_collision_cost *= self.params.get_int("/car1/rhcontroller/control/collision_weight", 1000)
 
         result = cross_track_error.add(along_track_error).add(heading_error).add(time_error).add(winding_cost).add(agent_collision_cost)
 
