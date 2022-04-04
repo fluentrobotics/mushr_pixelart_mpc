@@ -125,6 +125,7 @@ class RHCNode(rhcbase.RHCBase):
                 self.rhctrl.cost.time_now = time.time() - self.start_time  # set the time in rhctrl
                 result = self.rhctrl.step(ip, path, car_pose)
                 total = rospy.get_time() - before
+                # print(total)
                 return result
             self.logger.err("Shouldn't get here: run_loop")
 

@@ -112,10 +112,10 @@ class Waypoints:
 
     def propagate_forward(self):
         N = len(self.agents)
-        poses = np.zeros((N, 21, 2))
+        poses = np.zeros((N, self.T, 2))
         i = 0
         for agent in self.agents:
-            t = np.arange(0, 1.5, (1.5/21.0))
+            t = np.arange(0, 1.5, (1.5/self.T))
             # K = m.tan(agents[4])/self.wheel_base
             # angle = agents[2] + agents[3]*K*t
             vec = agent[3]*np.array([np.cos(agent[2]), np.sin(agent[2])])
@@ -130,7 +130,7 @@ class Waypoints:
         poses = np.array(torch_poses[:,:,:2])
         all_poses = self.propagate_forward()
         winding_cost = np.zeros(self.K)
-        t = np.arange(0, 1.5, (1.5/21.0)) + self.time_now  # this needs to be parameterized
+        t = np.arange(0, 1.5, (1.5/self.T)) + self.time_now  # this needs to be parameterized
         expected_winding = np.zeros((self.T, 4))  # TODO don't hardcode number of agents
         for i in range(self.T):
             expected_winding[i] = self.get_winding_number(t[i], None)
@@ -151,7 +151,7 @@ class Waypoints:
         own_poses = np.array(torch_poses[:,:,:2])
         all_poses = self.propagate_forward()
         collisions = np.zeros(self.K)
-        thres = 0.4  # TODO parameterize?
+        thres = 0.5  # TODO parameterize?
 
         for k in range(len(own_poses)):
             for t in range(len(own_poses[k])):
@@ -203,7 +203,7 @@ class Waypoints:
 
         x_ref, y_ref, theta_ref, time_ref = path[index]
 
-        time_array = torch.from_numpy(np.arange(time_ref + 1.5, time_ref , -(1.5/21.0)))
+        time_array = torch.from_numpy(np.arange(time_ref + 1.5, time_ref , -(1.5/self.T)))
         d_ref = self.des_speed*(time_array - self.time_now)
 
         cross_track_error = np.abs(
@@ -234,10 +234,10 @@ class Waypoints:
         agent_collision_cost = self.agent_collisions(poses)
 
         # multiply weights
-        print("cross_track_cost: ", cross_track_error)
-        print("time_cost: ", time_error)
-        print("winding cost: ", winding_cost)
-        print("collision cost: ", agent_collision_cost)
+        # print("cross_track_cost: ", cross_track_error)
+        # print("time_cost: ", time_error)
+        # print("winding cost: ", winding_cost)
+        # print("collision cost: ", agent_collision_cost)
         cross_track_error *= self.params.get_int("/car1/rhcontroller/control/cte_weight", default=100)  
         along_track_error *= self.params.get_int("/car1/rhcontroller/control/ate_weight", default=100)
         heading_error *= self.params.get_int("/car1/rhcontroller/control/he_weight", default= 10)

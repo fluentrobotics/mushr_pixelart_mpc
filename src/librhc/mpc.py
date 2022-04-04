@@ -68,17 +68,32 @@ class MPC:
         # For each K trial, the first position is at the current position
         self.rollouts[:, 0] = state.expand_as(self.rollouts[:, 0])
 
-        v = self.desired_speed #min( self.desired_speed, self.desired_speed * (self.dist_to_goal(state) / (self.dist_horizon)))
-        trajs = self.trajgen.get_control_trajectories(v)
-        assert trajs.size() == (self.K, self.T, 2)
+        min_cost = 1000000000
+        out = None
+        rollout = None
+        for i in range(1):
+            v = min( self.desired_speed/(i+1), self.desired_speed * (self.dist_to_goal(state) / (self.dist_horizon)))
+            trajs = self.trajgen.get_control_trajectories(v)
+            assert trajs.size() == (self.K, self.T, 2)
 
-        for t in range(1, self.T):
-            cur_x = self.rollouts[:, t - 1]
-            self.rollouts[:, t] = self.kinematics.apply(cur_x, trajs[:, t - 1])
+            for t in range(1, self.T):
+                cur_x = self.rollouts[:, t - 1]
+                self.rollouts[:, t] = self.kinematics.apply(cur_x, trajs[:, t - 1])
 
-        costs = self.cost.apply(self.rollouts, g, path, car_pose)
-        result, idx = self.trajgen.generate_control(trajs, costs)
-        result[0,0] = max(0.0, result[0,0]) # prevent reverse
+            costs = self.cost.apply(self.rollouts, g, path, car_pose)
+            result, idx = self.trajgen.generate_control(trajs, costs)
+            if(i < 1):
+                min_cost = costs[idx]
+                out = result
+                rollouts = self.rollouts
+            else:
+                if(costs[idx] < min_cost):
+                    min_cost = costs[idx]
+                    out = result
+                    rollouts = self.rollouts
+        self.rollouts = rollouts
+        result = out
+        # result[0,0] = max(0.0, result[0,0]) # prevent reverse
         return result, self.rollouts[idx]
 
     def set_goal(self, goal):

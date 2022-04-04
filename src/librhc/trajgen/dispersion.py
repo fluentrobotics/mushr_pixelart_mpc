@@ -106,13 +106,17 @@ class Dispersion:
                 ms_ctrls[:, :, 0] = desired_speed
                 ms_ctrls[:, :, 1] = ms_deltas
             else:
-                ms_ctrls = self.dtype(N_mother, self.T, self.NCTRL)
+                zero_idx = 0
+                ms_ctrls = self.dtype(N_mother + 1, self.T, self.NCTRL)
                 ms_ctrls[:, :, 0] = desired_speed
-                ms_ctrls[:, :, 1] = ms_deltas
+                ms_ctrls[1:, :, 1] = ms_deltas
+                ms_ctrls[0, :, :] = 0
 
             ms_poses = self._rollout_ms(ms_ctrls)
             pos_ctrls = self._prune_mother_set(zero_idx, ms_ctrls, ms_poses)
             self.ctrls = pos_ctrls
+            self.ctrls[0,:,:] = 0
+            print(np.where(self.ctrls[:,:,0] == 0))
             torch.save(self.ctrls, dispersion_path)
 
     def _rollout_ms(self, ms_ctrls):
@@ -167,6 +171,7 @@ class Dispersion:
         """
         # scale the velocity but preserve sign
         self.ctrls[:, :, 0] = velocity * np.sign(self.ctrls[:, :, 0])
+        # print(np.where(self.ctrls[:,:,0] == 0))
         # self.ctrls[:,:,0][self.ctrls[:,:,0] < 0] = 0  # prevent reverse
         # print(self.ctrls[:,:,0])
         return self.ctrls

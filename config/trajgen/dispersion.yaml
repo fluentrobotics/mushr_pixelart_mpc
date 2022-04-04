@@ -1,5 +1,5 @@
-T: 21
-K: 162
+T: 12
+K: 20
 trajgen_name: 'dispersion'
 horizon:
     distance: 0.6
@@ -8,8 +8,8 @@ trajgen:
     dispersion:
         samples: 9
     desired_speed: 0.4
-    min_delta: -0.16
-    max_delta: 0.16
+    min_delta: -0.34
+    max_delta: 0.34
 cost_fn:
     obs_dist_w: 86.0
     cost2go_w: 10.0
@@ -21,6 +21,6 @@ control:
     cte_weight: 100
     ate_weight: 0
     he_weight: 0
-    time_weight: 10
+    time_weight: 20
     winding_weight: 0
-    collision_weight: 0
+    collision_weight: 100
