@@ -151,13 +151,14 @@ class Waypoints:
         own_poses = np.array(torch_poses[:,:,:2])
         all_poses = self.propagate_forward()
         collisions = np.zeros(self.K)
-        thres = 0.5  # TODO parameterize?
+        thres = 0.4 # TODO parameterize?
 
         for k in range(len(own_poses)):
             for t in range(len(own_poses[k])):
                 for j in range(N):
-                    if j != self.own_index and np.linalg.norm(own_poses[k][t] - all_poses[j][t]) < thres:
-                        collisions[k] += 1
+                    dist = np.linalg.norm(own_poses[k][t] - all_poses[j][t])
+                    if j != self.own_index and dist < 1.5*thres:
+                        collisions[k] += 0.5 + ((1.5*thres - dist)/thres)  # normalize by threshold.
 
         return torch.from_numpy(collisions)
 
