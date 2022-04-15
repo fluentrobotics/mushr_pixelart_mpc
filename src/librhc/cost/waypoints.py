@@ -131,7 +131,7 @@ class Waypoints:
         all_poses = self.propagate_forward()
         winding_cost = np.zeros(self.K)
         t = np.arange(0, 1.5, (1.5/self.T)) + self.time_now  # this needs to be parameterized
-        expected_winding = np.zeros((self.T, 4))  # TODO don't hardcode number of agents
+        expected_winding = np.zeros((self.T, len(self.agents)))  # TODO don't hardcode number of agents
         for i in range(self.T):
             expected_winding[i] = self.get_winding_number(t[i], None)
 
@@ -220,7 +220,7 @@ class Waypoints:
         )
         time_error = np.zeros_like(along_track_error)
         for i in range(self.K):
-            time_error[i,:] = d_ref - along_track_error[i,:]
+            time_error[i,:] = d_ref - along_track_error[i,:].double()
         time_error = np.abs(time_error)
         time_error = torch.from_numpy(time_error)
         
@@ -230,7 +230,7 @@ class Waypoints:
         # take the heading error from last pos in trajs
         heading_error = np.abs((poses[:, -1, 2] - theta_ref))
 
-        winding_cost = self.winding_cost(poses)
+        # winding_cost = self.winding_cost(poses)
 
         agent_collision_cost = self.agent_collisions(poses)
 
@@ -243,11 +243,12 @@ class Waypoints:
         along_track_error *= self.params.get_int("/car1/rhcontroller/control/ate_weight", default=100)
         heading_error *= self.params.get_int("/car1/rhcontroller/control/he_weight", default= 10)
         time_error *= self.params.get_int("/car1/rhcontroller/control/time_weight", default = 10)
-        winding_cost *= self.params.get_int("/car1/rhcontroller/control/winding_weight", default= 10)
+        # winding_cost *= self.params.get_int("/car1/rhcontroller/control/winding_weight", default= 10)
         # print(self.params.get_int("/car1/rhcontroller/control/winding_weight", default= 10))
         agent_collision_cost *= self.params.get_int("/car1/rhcontroller/control/collision_weight", 1000)
 
-        result = cross_track_error.add(along_track_error).add(heading_error).add(time_error).add(winding_cost).add(agent_collision_cost)
+        # result = cross_track_error.add(along_track_error).add(heading_error).add(time_error).add(winding_cost).add(agent_collision_cost)
+        result = cross_track_error.double().add(along_track_error.double()).add(heading_error.double()).add(time_error.double()).add(agent_collision_cost.double())
 
         colliding = collision_cost.nonzero()
         result[colliding] = 1000000000
