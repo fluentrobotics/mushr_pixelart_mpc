@@ -153,12 +153,35 @@ class Waypoints:
         collisions = np.zeros(self.K)
         thres = 0.4 # TODO parameterize?
 
+        # # print(self.agents, self.own_index, self.agent_paths, self.T)
+        # agent_path = self.agent_paths[self.own_index]
+        # agent = self.agents[self.own_index]
+        # min_dist = 2
+        # closest_index = 0
+        # for i in range(len(agent_path)):
+        #     pos = agent_path[i, :2]
+        #     if( np.linalg.norm(pos - agent[:2]) < min_dist ):
+        #         min_dist = np.linalg.norm(pos - agent[:2])
+        #         closest_index = i
+        # now_time = agent_path[closest_index,3]
+        # t = np.arange(0, 2.0, (2.0/float(self.T))) + now_time
+        # expected_winding = np.zeros((self.T, len(self.agents)))  # TODO don't hardcode number of agents
+        # for i in range(self.T):
+        #     expected_winding[i] = self.get_winding_number(t[i], None) - agent[2]
+
         for k in range(len(own_poses)):
             for t in range(len(own_poses[k])):
                 for j in range(N):
                     dist = np.linalg.norm(own_poses[k][t] - all_poses[j][t])
                     if j != self.own_index and dist < 1.5*thres:
-                        collisions[k] += 0.5 + ((1.5*thres - dist)/thres)  # normalize by threshold.
+                        theta = expected_winding[j,0]
+                        dtheta = np.mean(np.diff(expected_winding[j]))
+                        multiplier = 1
+                        # if(theta * dtheta < 0):
+                        #     multiplier = 10
+                        # else:
+                        #     multiplier = 0.5
+                        collisions[k] += multiplier*(0.5 + ((1.5*thres - dist)/thres))  # normalize by threshold.
 
         return torch.from_numpy(collisions)
 
@@ -185,7 +208,7 @@ class Waypoints:
         collision_cost = collisions.sum(dim=1).mul(self.bounds_cost)
 
         # calculate lookahead
-        distance_lookahead = 0.6
+        distance_lookahead = 1.2
 
         # calculate closest index to car position
         diff = np.sqrt(
@@ -220,7 +243,7 @@ class Waypoints:
         )
         time_error = np.zeros_like(along_track_error)
         for i in range(self.K):
-            time_error[i,:] = d_ref - along_track_error[i,:]
+            time_error[i,:] = (d_ref - along_track_error[i,:])**2
         time_error = np.abs(time_error)
         time_error = torch.from_numpy(time_error)
         
@@ -234,11 +257,6 @@ class Waypoints:
 
         agent_collision_cost = self.agent_collisions(poses)
 
-        # multiply weights
-        # print("cross_track_cost: ", cross_track_error)
-        # print("time_cost: ", time_error)
-        # print("winding cost: ", winding_cost)
-        # print("collision cost: ", agent_collision_cost)
         cross_track_error *= self.params.get_int("/car1/rhcontroller/control/cte_weight", default=100)  
         along_track_error *= self.params.get_int("/car1/rhcontroller/control/ate_weight", default=100)
         heading_error *= self.params.get_int("/car1/rhcontroller/control/he_weight", default= 10)
