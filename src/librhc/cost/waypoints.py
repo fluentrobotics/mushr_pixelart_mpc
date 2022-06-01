@@ -174,14 +174,14 @@ class Waypoints:
                 for j in range(N):
                     dist = np.linalg.norm(own_poses[k][t] - all_poses[j][t])
                     if j != self.own_index and dist < 1.5*thres:
-                        theta = expected_winding[j,0]
-                        dtheta = np.mean(np.diff(expected_winding[j]))
-                        multiplier = 1
+                        # theta = expected_winding[j,0]
+                        # dtheta = np.mean(np.diff(expected_winding[j]))
+                        # multiplier = 1
                         # if(theta * dtheta < 0):
                         #     multiplier = 10
                         # else:
                         #     multiplier = 0.5
-                        collisions[k] += multiplier*(0.5 + ((1.5*thres - dist)/thres))  # normalize by threshold.
+                        collisions[k] += (0.5 + ((1.5*thres - dist)/thres))  # normalize by threshold.
 
         return torch.from_numpy(collisions)
 
