@@ -190,7 +190,7 @@ class RHCNode(rhcbase.RHCBase):
     def check_new_agents(self):
         count = 0
         name_list = []
-        while(count < 4):
+        while(count < 2):
             try:
                 topics = rospy.get_published_topics()
                 for topic in topics:
@@ -322,6 +322,7 @@ class RHCNode(rhcbase.RHCBase):
     # CHANGED
     def path_cb(self, msg):
         path = []
+        print("hit")
         time_stamp = 0
         time_step = 1.0  # calced
         for pose in msg.poses:
