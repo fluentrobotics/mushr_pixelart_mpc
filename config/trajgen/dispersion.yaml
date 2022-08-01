@@ -23,4 +23,4 @@ control:
     he_weight: 0
     time_weight: 20
     winding_weight: 0
-    collision_weight: 10
+    collision_weight: 150

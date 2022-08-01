@@ -1,0 +1,9 @@
+sys_name:
+  sys1: "TA+CLCBS+MPC"
+  sys2: "CLCBS+MPC"
+  sys3: "MPC"
+  sys4: "PP"
+bench_name: "ex2"
+benchdir: "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/benchmarks"
+launchfile: "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/launch/sim/autotest_mpc.launch"
+bagdir: "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/bags"
