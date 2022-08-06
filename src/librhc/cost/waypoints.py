@@ -112,19 +112,19 @@ class Waypoints:
 
     def propagate_forward(self):
         N = len(self.agents)
-        poses = torch.zeros((N, self.T, 2))
+        poses = np.zeros((N, self.T, 2))
         i = 0
         for agent in self.agents:
             t = np.arange(0, 1.5, (1.5/self.T))
             # K = m.tan(agents[4])/self.wheel_base
             # angle = agents[2] + agents[3]*K*t
-            vec = agent[3]*torch.tensor([np.cos(agent[2]), np.sin(agent[2])])
+            vec = agent[3]*np.array([np.cos(agent[2]), np.sin(agent[2])])
             x = agent[0] + vec[0]*t
             y = agent[1] + vec[1]*t
             poses[i][:, 0] = x
             poses[i][:, 1] = y
             i += 1
-        return poses
+        return torch.from_numpy(poses).float()
 
     def winding_cost(self, torch_poses):
         poses = np.array(torch_poses[:,:,:2])
