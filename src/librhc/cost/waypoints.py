@@ -152,7 +152,7 @@ class Waypoints:
         other_poses = torch.cat((all_poses[: self.own_index], all_poses[self.own_index + 1 :]))
         thres = 0.4
         dist = torch.norm(other_poses - own_poses[:, :, :, :2], dim=3)
-        dist[dist < 1.5 * thres] = 2 * thres
+        dist[dist > 1.5 * thres] = 2 * thres
         return torch.sum(2 - dist / thres, (1, 2))
 
 
