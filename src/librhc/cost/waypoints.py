@@ -112,13 +112,13 @@ class Waypoints:
 
     def propagate_forward(self):
         N = len(self.agents)
-        poses = np.zeros((N, self.T, 2))
+        poses = torch.zeros((N, self.T, 2))
         i = 0
         for agent in self.agents:
             t = np.arange(0, 1.5, (1.5/self.T))
             # K = m.tan(agents[4])/self.wheel_base
             # angle = agents[2] + agents[3]*K*t
-            vec = agent[3]*np.array([np.cos(agent[2]), np.sin(agent[2])])
+            vec = agent[3]*torch.tensor([np.cos(agent[2]), np.sin(agent[2])])
             x = agent[0] + vec[0]*t
             y = agent[1] + vec[1]*t
             poses[i][:, 0] = x
@@ -146,21 +146,15 @@ class Waypoints:
         winding_cost = np.array(winding_cost)
         return torch.from_numpy(np.abs(winding_cost))
 
-    def agent_collisions(self, torch_poses):
-        N = len(self.agents)
-        own_poses = np.array(torch_poses[:,:,:2])
+
+    def agent_collisions(self, own_poses):
         all_poses = self.propagate_forward()
-        collisions = np.zeros(self.K)
-        thres = 0.4 # TODO parameterize?
+        other_poses = torch.cat((all_poses[: self.own_index], all_poses[self.own_index + 1 :]))
+        thres = 0.4
+        dist = torch.norm(other_poses - own_poses[:, :, :, :2], dim=3)
+        dist[dist < 1.5 * thres] = 2 * thres
+        return torch.sum(2 - dist / thres, (1, 2))
 
-        for k in range(len(own_poses)):
-            for t in range(len(own_poses[k])):
-                for j in range(N):
-                    dist = np.linalg.norm(own_poses[k][t] - all_poses[j][t])
-                    if j != self.own_index and dist < 1.5*thres:
-                        collisions[k] += 0.5 + ((1.5*thres - dist)/thres)  # normalize by threshold.
-
-        return torch.from_numpy(collisions)
 
     def apply(self, poses, goal, path, car_pose):
         """
@@ -220,7 +214,7 @@ class Waypoints:
         )
         time_error = np.zeros_like(along_track_error)
         for i in range(self.K):
-            time_error[i,:] = d_ref - along_track_error[i,:].double()
+            time_error[i,:] = (d_ref - along_track_error[i,:].double())**2
         time_error = np.abs(time_error)
         time_error = torch.from_numpy(time_error)
         
@@ -232,7 +226,7 @@ class Waypoints:
 
         # winding_cost = self.winding_cost(poses)
 
-        agent_collision_cost = self.agent_collisions(poses)
+        agent_collision_cost = self.agent_collisions(poses.view(self.K, 1, self.T, self.NPOS))
 
         # multiply weights
         # print("cross_track_cost: ", cross_track_error)

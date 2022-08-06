@@ -92,6 +92,7 @@ class RHCNode(rhcbase.RHCBase):
                 # experiment tool
                 self.publish_expr_state()
                 if self.rhctrl.at_goal(self.inferred_pose()):
+                    self.publish_expr_state()
                     self.expr_at_goal.publish(Empty())
                     self.goal_event.clear()
             rate.sleep()
@@ -125,7 +126,7 @@ class RHCNode(rhcbase.RHCBase):
                 self.rhctrl.cost.time_now = time.time() - self.start_time  # set the time in rhctrl
                 result = self.rhctrl.step(ip, path, car_pose)
                 total = rospy.get_time() - before
-                # print(total)
+                print(total)
                 return result
             self.logger.err("Shouldn't get here: run_loop")
 
@@ -189,7 +190,7 @@ class RHCNode(rhcbase.RHCBase):
     def check_new_agents(self):
         count = 0
         name_list = []
-        while(count < 4):
+        while(count < 2):
             try:
                 topics = rospy.get_published_topics()
                 for topic in topics:

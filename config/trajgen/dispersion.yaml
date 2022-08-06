@@ -1,5 +1,5 @@
 T: 12
-K: 20
+K: 30
 trajgen_name: 'dispersion'
 horizon:
     distance: 0.6
@@ -19,8 +19,8 @@ world_rep:
     epsilon: 0.6
 control:
     cte_weight: 100
-    ate_weight: 20
+    ate_weight: 0
     he_weight: 0
-    time_weight: 1
-    winding_weight: 20
-    collision_weight: 100
+    time_weight: 70
+    winding_weight: 0
+    collision_weight: 150
