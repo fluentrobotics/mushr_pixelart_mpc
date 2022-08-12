@@ -1,15 +1,47 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
+import yaml
 
-base_dir = '/home/stark/catkin_mushr/src/nhttc_ros/bags/'
-bagdir = 'output_bags'
+yaml_file = "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/config/autotest.yaml"
 
-new_sys2 = np.load(base_dir+bagdir+'/'+ name[6] +'/output_raw.npy', allow_pickle = True)
+config = None
+with open(yaml_file) as f:
+    config = yaml.safe_load(f)
+if(config == None):
+    print("no config found")
+    exit()
 
+base_dir = config["bagdir"]
 
-data = new_sys2
-print(new_sys2[0,:].mean())
+def get_m_std(x):
+    y = x[np.isfinite(x)]  # because sometimes we get inf
+    m, s = np.mean(y), np.std(y)
+    return m, s
+
+output = []
+labels = config["sys_name"]
+colors = ["red", "purple", "blue", "green"]
+bar_width = 0.15
+
+sys_type = []
+name_dict = config["sys_name"]
+for name in name_dict:
+    sys_type.append(name_dict[name])
+
+for name in sys_type:
+    sys = np.load(base_dir + "/" + name + "/output_raw.npy", allow_pickle=True)
+    success = sys[0,:].mean()
+    cte_m, cte_std = get_m_std(sys[2,:])
+    block_e_m, block_e_std = get_m_std(sys[3,:])
+    time_m, time_std = get_m_std(sys[4,:])
+    print("sys name: ", name)
+    print("success: ", success)
+    print("cte m/std: ", cte_m, cte_std)
+    print("block error m/std: ", block_e_m, block_e_std)
+    print("time m/std: ", time_m, time_std)
+    # exit()
+
 # index1 = np.where(full_sys[0,:])
 # index2 = np.where(full_sys_ded[0,:])
 # index3 = np.where(locl_sys[0,:])
@@ -78,12 +110,6 @@ def read_messages(bag, topic_list, car_names):
             return 1
     return 0
 
-def get_m_std(x, bernoulli):
-    y = x[np.isfinite(x)]  # because sometimes we get inf
-    m, s = np.mean(y), np.std(y)
-    if(bernoulli):
-        s = 0  # np.sqrt(m*(1-m))
-    return m, s
 
 def update_collision(x):
     x[1,:] = np.array(x[4,:] < 0.3, dtype=float)

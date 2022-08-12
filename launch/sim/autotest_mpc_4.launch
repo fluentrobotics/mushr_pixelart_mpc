@@ -9,8 +9,8 @@
  <arg default="/car_pose" name="car_pose"/>
  <arg default="1" name="map_server"/>
  <arg default="clcbs_data_0" name="bag_name"/>
- <arg default="/clcbs_data_test_1" name="record_name"/>
- <arg default="/home/stark/catkin_mushr/src/mushr_pixelart_mpc/bags/CLCBS+MPC" name="output_dir"/>
+ <arg default="/clcbs_data_test_0" name="record_name"/>
+ <arg default="/home/stark/catkin_mushr/src/mushr_pixelart_mpc/bags/TA+CLCBS+MPC" name="output_dir"/>
  <group if="$(arg map_server)">
   <include file="$(find mushr_sim)/launch/map_server.launch"/>
  </group>
@@ -49,7 +49,7 @@
    <rosparam file="$(find mushr_pixelart_mpc)/config/sim.yaml"/>
   </node>
  </group>
-  <group ns="$(arg car3_name)">
+ <group ns="$(arg car3_name)">
   <include file="$(find mushr_sim)/launch/single_car.launch">
    <arg name="car_name" value="$(arg car3_name)"/>
    <arg name="racecar_version" value="racecar-uw-nano"/>
@@ -61,6 +61,23 @@
    <param name="car_name" value="$(arg car3_name)"/>
    <param name="path_topic" value="$(arg path_topic)"/>
    <param name="car_pose" value="/$(arg car3_name)$(arg car_pose)"/>
+   <rosparam file="$(find mushr_pixelart_mpc)/config/trajgen/$(arg tg).yaml"/>
+   <rosparam file="$(find mushr_pixelart_mpc)/config/config.yaml"/>
+   <rosparam file="$(find mushr_pixelart_mpc)/config/sim.yaml"/>
+  </node>
+ </group>
+ <group ns="$(arg car4_name)">
+  <include file="$(find mushr_sim)/launch/single_car.launch">
+   <arg name="car_name" value="$(arg car4_name)"/>
+   <arg name="racecar_version" value="racecar-uw-nano"/>
+   <arg name="racecar_color" value="-purple-gold"/>
+  </include>
+  <node name="rhcontroller" pkg="mushr_pixelart_mpc" type="rhcnode.py">
+   <env name="RHC_USE_CUDA" value="0"/>
+   <param name="inferred_pose_t" value="car_pose"/>
+   <param name="car_name" value="$(arg car4_name)"/>
+   <param name="path_topic" value="$(arg path_topic)"/>
+   <param name="car_pose" value="/$(arg car4_name)$(arg car_pose)"/>
    <rosparam file="$(find mushr_pixelart_mpc)/config/trajgen/$(arg tg).yaml"/>
    <rosparam file="$(find mushr_pixelart_mpc)/config/config.yaml"/>
    <rosparam file="$(find mushr_pixelart_mpc)/config/sim.yaml"/>

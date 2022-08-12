@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+ <!-- <node type="rviz" name="rviz" pkg="rviz" args="-d $(find package_name)/rviz/multi_teleop.rviz" /> -->
+ <arg default="car1" name="car1_name"/>
+ <arg default="car2" name="car2_name"/>
+ <arg default="car3" name="car3_name"/>
+ <arg default="car4" name="car4_name"/>
+ <arg default="clcbs_data_0" name="bag_name"/>
+ <arg default="/clcbs_data_test_0" name="record_name"/>
+ <arg default="/home/stark/catkin_mushr/src/mushr_pixelart_mpc/bags/NHTTC" name="output_dir"/>
+ <!-- Set to 1 if you want to run the map_server -->
+ <arg default="$(find nhttc_ros)/config/locl_sys.yaml" name="nhttc_multi_config"/>
+ <rosparam command="load" file="$(arg nhttc_multi_config)"/>
+ <node args="-a -o $(arg output_dir)/$(arg record_name).bag" name="rosbag_record" output="screen" pkg="rosbag" type="record"/>
+ <arg name="map_server" value="1"/>
+ <!-- Launch  map server-->
+ <group if="$(arg map_server)">
+  <include file="$(find mushr_sim)/launch/map_server.launch"/>
+ </group>
+ <!-- Launch first car -->
+ <group ns="$(arg car1_name)">
+  <include file="$(find mushr_sim)/launch/single_car.launch">
+   <arg name="car_name" value="$(arg car1_name)"/>
+   <arg name="racecar_version" value="racecar-uw-nano"/>
+   <arg name="racecar_color" value=""/>
+  </include>
+  <node name="controller" output="screen" pkg="nhttc_ros" type="nhttc_ros_node">
+   <param name="car_name" value="car1"/>
+  </node>
+ </group>
+ <!-- Launch second car -->
+ <group ns="$(arg car2_name)">
+  <include file="$(find mushr_sim)/launch/single_car.launch">
+   <arg name="car_name" value="$(arg car2_name)"/>
+   <arg name="racecar_version" value="racecar-uw-nano"/>
+   <arg name="racecar_color" value="-green-black"/>
+  </include>
+  <node name="controller" pkg="nhttc_ros" type="nhttc_ros_node">
+   <param name="car_name" value="car2"/>
+  </node>
+ </group>
+</launch>

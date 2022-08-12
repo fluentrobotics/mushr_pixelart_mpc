@@ -92,7 +92,8 @@ class RHCNode(rhcbase.RHCBase):
                 # experiment tool
                 self.publish_expr_state()
                 if self.rhctrl.at_goal(self.inferred_pose()):
-                    self.publish_expr_state()  # sometimes the car hits goal right after publishing. We don't wanna miss it.
+                    for i in range(10):
+                        self.publish_expr_state()  # sometimes the car hits goal right after publishing. We don't wanna miss it.
                     self.expr_at_goal.publish(Empty())
                     self.goal_event.clear()
             rate.sleep()
