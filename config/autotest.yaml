@@ -1,11 +1,10 @@
 sys_name:
-  # sys1: "TA+CLCBS+MPC"
-  # sys2: "CLCBS+MPC"
-  # sys3: "CLCBS+PP"
+  sys1: "TA+CLCBS+MPC"
+  sys2: "CLCBS+MPC"
+  sys3: "CLCBS+PP"
   sys4: "NHTTC"
 bench_name: "ex1"
 num_iterations: 1
-plan_launch_file: "/home/stark/catkin_mushr/src/clcbs_ros/launch/autotest_init_clcbs.launch"
 benchdir: "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/benchmarks"
 launchfile_TA: "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/launch/sim/autotest_TA.launch"
 launchfile_clcbs: "/home/stark/catkin_mushr/src/clcbs_ros/launch/clcbs_ros.launch"
