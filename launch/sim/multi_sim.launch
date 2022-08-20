@@ -56,7 +56,7 @@
         </node>
     </group>
 
-    <group ns="$(arg car3_name)">
+   <group ns="$(arg car3_name)">
 		<include file="$(find mushr_sim)/launch/single_car.launch">
 			<arg name="car_name" value="$(arg car3_name)" />
 			<arg name="racecar_version" value="racecar-uw-nano" />

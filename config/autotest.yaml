@@ -1,0 +1,14 @@
+sys_name:
+  # sys1: "TA+CLCBS+MPC"
+  # sys2: "CLCBS+MPC"
+  sys3: "CLCBS+PP"
+  # sys4: "NHTTC"
+bench_name: "ex2"
+num_iterations: 50
+benchdir: "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/benchmarks"
+launchfile_TA: "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/launch/sim/autotest_TA.launch"
+launchfile_clcbs: "/home/stark/catkin_mushr/src/clcbs_ros/launch/clcbs_ros.launch"
+launchfile_mpc: "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/launch/sim/autotest_mpc_"
+launchfile_nhttc: "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/launch/sim/autotest_nhttc_"
+bagdir: "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/bags"
+task_file: "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/benchmarks/"

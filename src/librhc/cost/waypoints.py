@@ -25,6 +25,7 @@ class Waypoints:
         self.agents = None
         self.agent_paths = None
         self.own_index = 0
+        self.target_index = 0
         self.wheel_base = self.params.get_float("model/wheel_base", default=0.29)
         self.reset()
 
@@ -39,7 +40,7 @@ class Waypoints:
         self.bounds_cost = self.params.get_float("cost_fn/bounds_cost", default=100.0)
 
         self.obs_dist_cooloff = torch.arange(1, self.T + 1).mul_(2).type(self.dtype)
-
+        self.horizon_dist = self.params.get_float("horizon/distance", default = 1.2)
         self.discount = self.dtype(self.T - 1)
 
         self.discount[:] = 1 + self.smoothing_discount_rate
@@ -150,7 +151,7 @@ class Waypoints:
     def agent_collisions(self, own_poses):
         all_poses = self.propagate_forward()
         other_poses = torch.cat((all_poses[: self.own_index], all_poses[self.own_index + 1 :]))
-        thres = 0.4
+        thres = 0.5
         dist = torch.norm(other_poses - own_poses[:, :, :, :2], dim=3)
         dist[dist > 1.5 * thres] = 2 * thres
         return torch.sum(2 - dist / thres, (1, 2))
@@ -179,16 +180,19 @@ class Waypoints:
         collision_cost = collisions.sum(dim=1).mul(self.bounds_cost)
 
         # calculate lookahead
-        distance_lookahead = 0.6
+        distance_lookahead = self.horizon_dist
 
         # calculate closest index to car position
+        ulim = min(self.target_index + 10, len(path))
+        llim = max(self.target_index, 0)
         diff = np.sqrt(
-            ((path[:, 0] - car_pose[0]) ** 2) + ((path[:, 1] - car_pose[1]) ** 2)
+            ((path[llim:ulim, 0] - car_pose[0]) ** 2) + ((path[llim:ulim, 1] - car_pose[1]) ** 2)
         )
-        index = np.argmin(diff)
 
+        index = np.argmin(diff)
+        self.target_index = index + llim
         # iterate to closest lookahead to distance
-        while index < len(path) - 1 and diff[index] < distance_lookahead:
+        while index < len(diff) - 1 and diff[index] < distance_lookahead:
             index += 1
 
         if abs(diff[index - 1] - distance_lookahead) < abs(
@@ -196,7 +200,7 @@ class Waypoints:
         ):
             index -= 1
 
-        x_ref, y_ref, theta_ref, time_ref = path[index]
+        x_ref, y_ref, theta_ref, time_ref = path[index + llim]
 
         time_array = torch.from_numpy(np.arange(time_ref + 1.5, time_ref , -(1.5/self.T)))
         d_ref = self.des_speed*(time_array - self.time_now)
@@ -212,12 +216,13 @@ class Waypoints:
             (poses[:, :, 0] - x_ref) * np.cos(theta_ref)
             + (poses[:, :, 1] - y_ref) * np.sin(theta_ref)
         )
+
         time_error = np.zeros_like(along_track_error)
         for i in range(self.K):
             time_error[i,:] = (d_ref - along_track_error[i,:].double())**2
         time_error = np.abs(time_error)
         time_error = torch.from_numpy(time_error)
-        
+
         # take the sum of error along the trajs
         along_track_error = torch.sum(along_track_error, dim=1)
         time_error = torch.sum(time_error, dim=1)
@@ -228,11 +233,6 @@ class Waypoints:
 
         agent_collision_cost = self.agent_collisions(poses.view(self.K, 1, self.T, self.NPOS))
 
-        # multiply weights
-        # print("cross_track_cost: ", cross_track_error)
-        # print("time_cost: ", time_error)
-        # print("winding cost: ", winding_cost)
-        # print("collision cost: ", agent_collision_cost)
         cross_track_error *= self.params.get_int("/car1/rhcontroller/control/cte_weight", default=100)  
         along_track_error *= self.params.get_int("/car1/rhcontroller/control/ate_weight", default=100)
         heading_error *= self.params.get_int("/car1/rhcontroller/control/he_weight", default= 10)
@@ -241,7 +241,6 @@ class Waypoints:
         # print(self.params.get_int("/car1/rhcontroller/control/winding_weight", default= 10))
         agent_collision_cost *= self.params.get_int("/car1/rhcontroller/control/collision_weight", 1000)
 
-        # result = cross_track_error.add(along_track_error).add(heading_error).add(time_error).add(winding_cost).add(agent_collision_cost)
         result = cross_track_error.double().add(along_track_error.double()).add(heading_error.double()).add(time_error.double()).add(agent_collision_cost.double())
 
         colliding = collision_cost.nonzero()
