@@ -6,8 +6,8 @@
  <arg default="car3" name="car3_name"/>
  <arg default="car4" name="car4_name"/>
  <arg default="clcbs_data_0" name="bag_name"/>
- <arg default="/clcbs_data_test_0" name="record_name"/>
- <arg default="/home/stark/catkin_mushr/src/mushr_pixelart_mpc/bags/NHTTC" name="output_dir"/>
+ <arg default="clcbs_data_test_0" name="record_name"/>
+ <arg default="/home/stark/catkin_mushr/src/mushr_pixelart_mpc/bags/ex1/NHTTC" name="output_dir"/>
  <!-- Set to 1 if you want to run the map_server -->
  <arg default="$(find nhttc_ros)/config/locl_sys.yaml" name="nhttc_multi_config"/>
  <rosparam command="load" file="$(arg nhttc_multi_config)"/>
@@ -24,7 +24,7 @@
    <arg name="racecar_version" value="racecar-uw-nano"/>
    <arg name="racecar_color" value=""/>
   </include>
-  <node name="controller" output="screen" pkg="nhttc_ros" type="nhttc_ros_node">
+  <node name="controller" pkg="nhttc_ros" type="nhttc_ros_node">
    <param name="car_name" value="car1"/>
   </node>
  </group>

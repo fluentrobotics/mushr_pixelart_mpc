@@ -66,11 +66,11 @@ class autotest():
         self.launchfile_TA = config["launchfile_TA"]
         self.launchfile_clcbs = config["launchfile_clcbs"]
 
-        self.bagdir = config["bagdir"]
+        self.bagdir = config["bagdir"] + "/" + self.bench_name
 
         self.benchdir = config["benchdir"]
 
-        self.task_file = config["task_file"]
+        self.task_file = config["task_file"] + self.bench_name + ".yaml"
 
         self.min_dist = 2
         self.N = config["num_iterations"]
@@ -102,7 +102,7 @@ class autotest():
                                            Marker, self.marker_cb, i, queue_size = 10)
             self.marker_subs.append(sub_marker)
 
-        self.timeout = 60 # 60 second time out
+        self.timeout = 100 # 60 second time out
         
 
     def adjust_launch_file(self, filename, bagdir, i, sys):
@@ -112,7 +112,7 @@ class autotest():
         # bag_name = bs_data.find("arg", {"name":"bag_name"})
         rec_name = bs_data.find("arg", {"name" : "record_name"})
         # bag_name["default"] = "clcbs_data_" + str(i)  # can put custom name according to "i" here
-        rec_name["default"] = "/clcbs_data_test_"+str(i)
+        rec_name["default"] = "clcbs_data_test_"+str(i)
         # output_dir
         rec_name = bs_data.find("arg", {"name" : "output_dir"})
         rec_name["default"] = bagdir
@@ -125,10 +125,13 @@ class autotest():
         if(sys == "CLCBS+PP"):
             rospy.set_param("/car1/rhcontroller/control/cte_weight", 200)
             rospy.set_param("/car1/rhcontroller/control/time_weight", 20)
+            # rospy.set_param("/car1/rhcontroller/control/ate_weight", 20)
             rospy.set_param("/car1/rhcontroller/control/collision_weight", 0)
+            print("setting weights for PP")
         else:
             rospy.set_param("/car1/rhcontroller/control/cte_weight", 200)
             rospy.set_param("/car1/rhcontroller/control/time_weight", 20)
+            # rospy.set_param("/car1/rhcontroller/control/ate_weight", 20)
             rospy.set_param("/car1/rhcontroller/control/collision_weight", 150)
 
 
@@ -153,7 +156,7 @@ class autotest():
         self.plan_pub = True  # plan has been published
 
     def fin_callback(self, msg, i):  # callback for the same
-        self.finished[i] = msg.pose.position.z or msg.pose.orientation.y < 0.1
+        self.finished[i] = msg.pose.position.z or msg.pose.orientation.y < 0.3
         if(msg.pose.orientation.x and self.deadlock[i] == 0):  # did we face a deadlock?
             self.deadlock[i] = 1
         if(self.finished[i]):
@@ -339,6 +342,7 @@ class autotest():
             bagdir = self.bagdir + "/" + test_sys
 
             try:
+                os.mkdir(self.bagdir)
                 os.mkdir(bagdir)
             except:
                 pass
@@ -379,7 +383,7 @@ class autotest():
                     time.sleep(0.1)
                     collision = False
                     min_dist = 2
-                    if(time.time() - wait_start > 20):
+                    if(time.time() - wait_start > 40):
                         if(test_sys == "TA+CLCBS+MPC"):
                             self.init_planner(no_TA = False)
                         else:
@@ -403,13 +407,13 @@ class autotest():
                 
                 while(self.finished.all() != 1 and time.time() - start_time < self.timeout):
                     rospy.sleep(1) # check once per second if all cars have reached their goal or if we have time-out
-                if(self.finished.all() != 1 or self.collision):  # happens if the cars don't finish within some stipulated time, usually due to deadlock
+                if(self.finished.all() != 1): # or self.collision):  # happens if the cars don't finish within some stipulated time, usually due to deadlock
                     self.success[i] = 0 # failure
                 else:
-                    self.success[i] = (not self.collision) # success if not collision
-
+                    self.success[i] = 1 #(not self.collision) # success if not collision
+                makespan_time = time.time() - start_time
                 print("success, collision: ", self.success[i], self.collision)
-                self.time_list[i] = self.time_error.mean()
+                self.time_list[i] = makespan_time #self.time_error.mean()
                 self.CTE_list[i] = self.cte.mean()
                 self.block_dist_list[i] = np.max(self.block_dist)
                 self.min_dist_list[i] = self.min_dist

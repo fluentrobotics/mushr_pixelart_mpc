@@ -25,6 +25,7 @@ class Waypoints:
         self.agents = None
         self.agent_paths = None
         self.own_index = 0
+        self.target_index = 0
         self.wheel_base = self.params.get_float("model/wheel_base", default=0.29)
         self.reset()
 
@@ -39,7 +40,7 @@ class Waypoints:
         self.bounds_cost = self.params.get_float("cost_fn/bounds_cost", default=100.0)
 
         self.obs_dist_cooloff = torch.arange(1, self.T + 1).mul_(2).type(self.dtype)
-
+        self.horizon_dist = self.params.get_float("horizon/distance", default = 1.2)
         self.discount = self.dtype(self.T - 1)
 
         self.discount[:] = 1 + self.smoothing_discount_rate
@@ -151,7 +152,7 @@ class Waypoints:
         own_poses = np.array(torch_poses[:,:,:2])
         all_poses = self.propagate_forward()
         collisions = np.zeros(self.K)
-        thres = 0.4 # TODO parameterize?
+        thres = 0.5 # TODO parameterize?
 
         # # print(self.agents, self.own_index, self.agent_paths, self.T)
         # agent_path = self.agent_paths[self.own_index]
@@ -208,16 +209,19 @@ class Waypoints:
         collision_cost = collisions.sum(dim=1).mul(self.bounds_cost)
 
         # calculate lookahead
-        distance_lookahead = 1.2
+        distance_lookahead = self.horizon_dist
 
         # calculate closest index to car position
+        ulim = min(self.target_index + 10, len(path))
+        llim = max(self.target_index, 0)
         diff = np.sqrt(
-            ((path[:, 0] - car_pose[0]) ** 2) + ((path[:, 1] - car_pose[1]) ** 2)
+            ((path[llim:ulim, 0] - car_pose[0]) ** 2) + ((path[llim:ulim, 1] - car_pose[1]) ** 2)
         )
-        index = np.argmin(diff)
 
+        index = np.argmin(diff)
+        self.target_index = index + llim
         # iterate to closest lookahead to distance
-        while index < len(path) - 1 and diff[index] < distance_lookahead:
+        while index < len(diff) - 1 and diff[index] < distance_lookahead:
             index += 1
 
         if abs(diff[index - 1] - distance_lookahead) < abs(
@@ -225,7 +229,7 @@ class Waypoints:
         ):
             index -= 1
 
-        x_ref, y_ref, theta_ref, time_ref = path[index]
+        x_ref, y_ref, theta_ref, time_ref = path[index + llim]
 
         time_array = torch.from_numpy(np.arange(time_ref + 1.5, time_ref , -(1.5/self.T)))
         d_ref = self.des_speed*(time_array - self.time_now)
@@ -241,12 +245,13 @@ class Waypoints:
             (poses[:, :, 0] - x_ref) * np.cos(theta_ref)
             + (poses[:, :, 1] - y_ref) * np.sin(theta_ref)
         )
+
         time_error = np.zeros_like(along_track_error)
         for i in range(self.K):
             time_error[i,:] = (d_ref - along_track_error[i,:])**2
         time_error = np.abs(time_error)
         time_error = torch.from_numpy(time_error)
-        
+
         # take the sum of error along the trajs
         along_track_error = torch.sum(along_track_error, dim=1)
         time_error = torch.sum(time_error, dim=1)

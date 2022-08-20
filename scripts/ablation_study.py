@@ -32,14 +32,20 @@ for name in name_dict:
 for name in sys_type:
     sys = np.load(base_dir + "/" + name + "/output_raw.npy", allow_pickle=True)
     success = sys[0,:].mean()
+    collision = len(np.where(sys[5,:] < 0.4)[0])*0.01
     cte_m, cte_std = get_m_std(sys[2,:])
     block_e_m, block_e_std = get_m_std(sys[3,:])
     time_m, time_std = get_m_std(sys[4,:])
+    min_dist_m, min_dist_std = get_m_std(sys[5,:])
+    block_fail = len(np.where(sys[3,:] > 0.1)[0])* 0.01
+    makespan_m, makespan_std = get_m_std(sys[4,:])
     print("sys name: ", name)
-    print("success: ", success)
+    print("success: ", success - collision - block_fail)
     print("cte m/std: ", cte_m, cte_std)
     print("block error m/std: ", block_e_m, block_e_std)
-    print("time m/std: ", time_m, time_std)
+    print("makespan_m/std: ", makespan_m, makespan_std)
+    print("==================")
+    # print("time m/std: ", time_m, time_std)
     # exit()
 
 # index1 = np.where(full_sys[0,:])

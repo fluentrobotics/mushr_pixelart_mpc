@@ -191,7 +191,8 @@ class RHCNode(rhcbase.RHCBase):
     def check_new_agents(self):
         count = 0
         name_list = []
-        while(count < 2):
+        start = time.time()
+        while(count < 2 or time.time() - start < 1):
             try:
                 topics = rospy.get_published_topics()
                 for topic in topics:
@@ -224,7 +225,7 @@ class RHCNode(rhcbase.RHCBase):
                                 name_list.append(name[1])  # add name to name list
                                 print("found car", name[1])
             except:
-                time.sleep(1)
+                time.sleep(0.1)
 
     def cb_general_pose(self, msg, i):
         theta = tf.transformations.euler_from_quaternion(
