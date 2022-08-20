@@ -340,9 +340,14 @@ class autotest():
                 launchfile = self.launchfile_mpc + str(self.num_agent) + ".launch"
 
             bagdir = self.bagdir + "/" + test_sys
-
+            
+            ## try making the main directory
             try:
                 os.mkdir(self.bagdir)
+            except:
+                pass
+            ## try making the sub-directory
+            try:
                 os.mkdir(bagdir)
             except:
                 pass
