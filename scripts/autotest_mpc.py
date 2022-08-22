@@ -45,6 +45,25 @@ def angle_to_quaternion(angle):
     """Convert an angle in radians into a quaternion _message_."""
     return Quaternion(*tf.transformations.quaternion_from_euler(0, 0, angle))
 
+def check_collision_rectangle(p1,p2):
+    L = 0.25
+    W = 0.12
+    c1 = np.cos(p1[2])
+    s1 = np.sin(p1[2])
+    c2 = np.cos(p2[2])
+    s2 = np.cos(p2[2])
+    Lc1 = L*c1
+    Wc1 = W*c1
+    Ls1 = L*s1
+    Ws1 = W*s1
+    Lc2 = L*c2
+    Wc2 = W*c2
+    Ls2 = L*s2
+    Ws2 = W*s2
+    polygon1 = Polygon([(p1[0] + Lc1 + Ws1, p1[1] + Ls1 - Wc1), (p1[0] + Lc1 - Ws1, p1[1] + Ls1 + Wc1), (p1[0] - Lc1 - Ws1, p1[1] - Ls1 + Wc1), (p1[0] - Lc1 + Ws1, p1[1] - Ls1 - Wc1)])
+    polygon2 = Polygon([(p2[0] + Lc1 + Ws1, p2[1] + Ls1 - Wc1), (p2[0] + Lc1 - Ws1, p2[1] + Ls1 + Wc1), (p2[0] - Lc1 - Ws1, p2[1] - Ls1 + Wc1), (p2[0] - Lc1 + Ws1, p2[1] - Ls1 - Wc1)])
+    return polygon1.intersects(polygon2)
+
 class autotest():
     """autotest class"""
     def __init__(self, yaml_file):
@@ -132,7 +151,7 @@ class autotest():
             rospy.set_param("/car1/rhcontroller/control/cte_weight", 200)
             rospy.set_param("/car1/rhcontroller/control/time_weight", 20)
             # rospy.set_param("/car1/rhcontroller/control/ate_weight", 20)
-            rospy.set_param("/car1/rhcontroller/control/collision_weight", 150)
+            rospy.set_param("/car1/rhcontroller/control/collision_weight", 15)
 
 
     def pose_callback(self, msg, i):
@@ -143,9 +162,10 @@ class autotest():
             dist = np.linalg.norm(self.car_poses[i,:2] - self.car_poses[j,:2])
             if(self.min_dist > dist and j!=i):
                 self.min_dist = dist  # keep track of min distance between any 2 cars
-                if(dist < 0.4):
-                    self.collision = True
-                    print("collision")
+                if(dist < 0.4 and dist > 0.1):
+                    self.collision = check_collision_rectangle(self.car_poses[i,:], self.car_poses[j,:])
+                    if(self.collision):
+                        print("collision")
 
         dist = np.linalg.norm(self.car_poses[i,:2] - self.block_poses[i])
         if(self.block_dist[i] > dist):
@@ -343,6 +363,10 @@ class autotest():
 
             try:
                 os.mkdir(self.bagdir)
+            except:
+                pass
+
+            try:
                 os.mkdir(bagdir)
             except:
                 pass
@@ -379,11 +403,11 @@ class autotest():
                 self.sub_unsub(sub=False, goal_listen = True)
 
                 wait_start = time.time()
-                while(not self.plan_pub):
+                while(not self.plan_pub and test_sys != "NHTTC"):
                     time.sleep(0.1)
                     collision = False
                     min_dist = 2
-                    if(time.time() - wait_start > 40):
+                    if(time.time() - wait_start > 1000):
                         if(test_sys == "TA+CLCBS+MPC"):
                             self.init_planner(no_TA = False)
                         else:
@@ -448,6 +472,7 @@ class autotest():
             print("success rate:", self.success.mean())
             
             clcbs_launch.shutdown()
+            
             if(TA_launch is not None):
                 TA_launch.shutdown()
 

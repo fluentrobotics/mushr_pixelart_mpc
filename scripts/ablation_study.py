@@ -12,7 +12,7 @@ if(config == None):
     print("no config found")
     exit()
 
-base_dir = config["bagdir"]
+base_dir = config["bagdir"] +"/" + config["bench_name"]
 
 def get_m_std(x):
     y = x[np.isfinite(x)]  # because sometimes we get inf
@@ -40,7 +40,8 @@ for name in sys_type:
     block_fail = len(np.where(sys[3,:] > 0.1)[0])* 0.01
     makespan_m, makespan_std = get_m_std(sys[4,:])
     print("sys name: ", name)
-    print("success: ", success - collision - block_fail)
+    print("success: ", success)
+    print("cases: ", sys[0,:])
     print("cte m/std: ", cte_m, cte_std)
     print("block error m/std: ", block_e_m, block_e_std)
     print("makespan_m/std: ", makespan_m, makespan_std)

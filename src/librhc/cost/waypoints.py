@@ -212,7 +212,7 @@ class Waypoints:
         distance_lookahead = self.horizon_dist
 
         # calculate closest index to car position
-        ulim = min(self.target_index + 10, len(path))
+        ulim = min(self.target_index + 15, len(path))
         llim = max(self.target_index, 0)
         diff = np.sqrt(
             ((path[llim:ulim, 0] - car_pose[0]) ** 2) + ((path[llim:ulim, 1] - car_pose[1]) ** 2)

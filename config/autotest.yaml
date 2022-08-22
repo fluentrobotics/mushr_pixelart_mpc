@@ -1,9 +1,9 @@
 sys_name:
-  # sys1: "TA+CLCBS+MPC"
-  # sys2: "CLCBS+MPC"
+  sys1: "TA+CLCBS+MPC"
+  sys2: "CLCBS+MPC"
   sys3: "CLCBS+PP"
-  # sys4: "NHTTC"
-bench_name: "ex2"
+  sys4: "NHTTC"
+bench_name: "ex3"
 num_iterations: 50
 benchdir: "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/benchmarks"
 launchfile_TA: "/home/stark/catkin_mushr/src/mushr_pixelart_mpc/launch/sim/autotest_TA.launch"

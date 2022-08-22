@@ -9,8 +9,8 @@
  <arg default="/car_pose" name="car_pose"/>
  <arg default="1" name="map_server"/>
  <arg default="clcbs_data_0" name="bag_name"/>
- <arg default="clcbs_data_test_2" name="record_name"/>
- <arg default="/home/stark/catkin_mushr/src/mushr_pixelart_mpc/bags/ex2/CLCBS+PP" name="output_dir"/>
+ <arg default="clcbs_data_test_49" name="record_name"/>
+ <arg default="/home/stark/catkin_mushr/src/mushr_pixelart_mpc/bags/ex2/CLCBS+MPC" name="output_dir"/>
  <group if="$(arg map_server)">
   <include file="$(find mushr_sim)/launch/map_server.launch"/>
  </group>
