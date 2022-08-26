@@ -2,11 +2,11 @@
     <arg name="tg" default="dispersion" />
 	<arg name="car_name" default="car30" />
 	<arg name="map_server" default="0" />
-    <arg name="path_topic" default="/waypoints" />
+    <arg name="path_topic" default="waypoints" />
     <arg name="car_pose" default="/car_pose" />
 
     <group if="$(arg map_server)">
-		<include file="$(find mushr_pixelart_mpc)/launch/map_server.launch" />
+		<include file="$(find mushr_base)/launch/includes/map_server.launch" />
     </group>
 
     <group ns="$(arg car_name)">
@@ -22,5 +22,11 @@
             <rosparam file="$(find mushr_pixelart_mpc)/config/config.yaml" />
             <rosparam file="$(find mushr_pixelart_mpc)/config/real.yaml" />
         </node>
+    </group>
+
+    <group>
+        <include file="$(find mushr_base)/launch/teleop.launch">
+            <arg name="car_name" value="$(arg car_name)" />
+        </include>
     </group>
 </launch>

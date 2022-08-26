@@ -125,14 +125,14 @@ class Waypoints:
             poses[i][:, 0] = x
             poses[i][:, 1] = y
             i += 1
-        return poses
+        return torch.from_numpy(poses).float()
 
     def winding_cost(self, torch_poses):
         poses = np.array(torch_poses[:,:,:2])
         all_poses = self.propagate_forward()
         winding_cost = np.zeros(self.K)
         t = np.arange(0, 1.5, (1.5/self.T)) + self.time_now  # this needs to be parameterized
-        expected_winding = np.zeros((self.T, 2))  # TODO don't hardcode number of agents
+        expected_winding = np.zeros((self.T, len(self.agents)))  # TODO don't hardcode number of agents
         for i in range(self.T):
             expected_winding[i] = self.get_winding_number(t[i], None)
 
@@ -147,44 +147,15 @@ class Waypoints:
         winding_cost = np.array(winding_cost)
         return torch.from_numpy(np.abs(winding_cost))
 
-    def agent_collisions(self, torch_poses):
-        N = len(self.agents)
-        own_poses = np.array(torch_poses[:,:,:2])
+
+    def agent_collisions(self, own_poses):
         all_poses = self.propagate_forward()
-        collisions = np.zeros(self.K)
-        thres = 0.5 # TODO parameterize?
+        other_poses = torch.cat((all_poses[: self.own_index], all_poses[self.own_index + 1 :]))
+        thres = 0.5
+        dist = torch.norm(other_poses - own_poses[:, :, :, :2], dim=3)
+        dist[dist > 1.5 * thres] = 2 * thres
+        return torch.sum(2 - dist / thres, (1, 2))
 
-        # # print(self.agents, self.own_index, self.agent_paths, self.T)
-        # agent_path = self.agent_paths[self.own_index]
-        # agent = self.agents[self.own_index]
-        # min_dist = 2
-        # closest_index = 0
-        # for i in range(len(agent_path)):
-        #     pos = agent_path[i, :2]
-        #     if( np.linalg.norm(pos - agent[:2]) < min_dist ):
-        #         min_dist = np.linalg.norm(pos - agent[:2])
-        #         closest_index = i
-        # now_time = agent_path[closest_index,3]
-        # t = np.arange(0, 2.0, (2.0/float(self.T))) + now_time
-        # expected_winding = np.zeros((self.T, len(self.agents)))  # TODO don't hardcode number of agents
-        # for i in range(self.T):
-        #     expected_winding[i] = self.get_winding_number(t[i], None) - agent[2]
-
-        for k in range(len(own_poses)):
-            for t in range(len(own_poses[k])):
-                for j in range(N):
-                    dist = np.linalg.norm(own_poses[k][t] - all_poses[j][t])
-                    if j != self.own_index and dist < 1.5*thres:
-                        # theta = expected_winding[j,0]
-                        # dtheta = np.mean(np.diff(expected_winding[j]))
-                        # multiplier = 1
-                        # if(theta * dtheta < 0):
-                        #     multiplier = 10
-                        # else:
-                        #     multiplier = 0.5
-                        collisions[k] += (0.5 + ((1.5*thres - dist)/thres))  # normalize by threshold.
-
-        return torch.from_numpy(collisions)
 
     def apply(self, poses, goal, path, car_pose):
         """
@@ -248,7 +219,7 @@ class Waypoints:
 
         time_error = np.zeros_like(along_track_error)
         for i in range(self.K):
-            time_error[i,:] = (d_ref - along_track_error[i,:])**2
+            time_error[i,:] = (d_ref - along_track_error[i,:].double())**2
         time_error = np.abs(time_error)
         time_error = torch.from_numpy(time_error)
 
@@ -260,7 +231,7 @@ class Waypoints:
 
         # winding_cost = self.winding_cost(poses)
 
-        agent_collision_cost = self.agent_collisions(poses)
+        agent_collision_cost = self.agent_collisions(poses.view(self.K, 1, self.T, self.NPOS))
 
         cross_track_error *= self.params.get_int("/car1/rhcontroller/control/cte_weight", default=100)  
         along_track_error *= self.params.get_int("/car1/rhcontroller/control/ate_weight", default=100)
@@ -270,7 +241,7 @@ class Waypoints:
         # print(self.params.get_int("/car1/rhcontroller/control/winding_weight", default= 10))
         agent_collision_cost *= self.params.get_int("/car1/rhcontroller/control/collision_weight", 1000)
 
-        result = cross_track_error.add(along_track_error).add(heading_error).add(time_error).add(agent_collision_cost)
+        result = cross_track_error.double().add(along_track_error.double()).add(heading_error.double()).add(time_error.double()).add(agent_collision_cost.double())
 
         colliding = collision_cost.nonzero()
         result[colliding] = 1000000000

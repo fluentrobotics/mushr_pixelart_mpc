@@ -1,5 +1,5 @@
 T: 12
-K: 20
+K: 30
 trajgen_name: 'dispersion'
 horizon:
     distance: 0.6
