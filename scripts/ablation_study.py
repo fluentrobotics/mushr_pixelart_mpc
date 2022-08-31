@@ -32,15 +32,16 @@ for name in name_dict:
 for name in sys_type:
     sys = np.load(base_dir + "/" + name + "/output_raw.npy", allow_pickle=True)
     success = sys[0,:].mean()
-    collision = len(np.where(sys[5,:] < 0.4)[0])*0.01
+    collision = sys[1,:].mean()
     cte_m, cte_std = get_m_std(sys[2,:])
     block_e_m, block_e_std = get_m_std(sys[3,:])
     time_m, time_std = get_m_std(sys[4,:])
     min_dist_m, min_dist_std = get_m_std(sys[5,:])
-    block_fail = len(np.where(sys[3,:] > 0.1)[0])* 0.01
+    block_fail = len(np.where(sys[3,:] > 0.15)[0])* 0.01
     makespan_m, makespan_std = get_m_std(sys[4,:])
     print("sys name: ", name)
-    print("success: ", success)
+    print("success: ", max(success - collision - block_fail,0), "valid for clcbs+pp")  # use this for CLCBS+PP
+    print("success: ", max(success - block_fail,0), "valid for every other system with collision avoidance")  # use this for everything else.
     print("cases: ", sys[0,:])
     print("cte m/std: ", cte_m, cte_std)
     print("block error m/std: ", block_e_m, block_e_std)
