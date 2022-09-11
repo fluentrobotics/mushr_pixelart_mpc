@@ -51,7 +51,7 @@ def check_collision_rectangle(p1,p2):
     c1 = np.cos(p1[2])
     s1 = np.sin(p1[2])
     c2 = np.cos(p2[2])
-    s2 = np.cos(p2[2])
+    s2 = np.sin(p2[2])
     Lc1 = L*c1
     Wc1 = W*c1
     Ls1 = L*s1
@@ -61,7 +61,7 @@ def check_collision_rectangle(p1,p2):
     Ls2 = L*s2
     Ws2 = W*s2
     polygon1 = Polygon([(p1[0] + Lc1 + Ws1, p1[1] + Ls1 - Wc1), (p1[0] + Lc1 - Ws1, p1[1] + Ls1 + Wc1), (p1[0] - Lc1 - Ws1, p1[1] - Ls1 + Wc1), (p1[0] - Lc1 + Ws1, p1[1] - Ls1 - Wc1)])
-    polygon2 = Polygon([(p2[0] + Lc1 + Ws1, p2[1] + Ls1 - Wc1), (p2[0] + Lc1 - Ws1, p2[1] + Ls1 + Wc1), (p2[0] - Lc1 - Ws1, p2[1] - Ls1 + Wc1), (p2[0] - Lc1 + Ws1, p2[1] - Ls1 - Wc1)])
+    polygon2 = Polygon([(p2[0] + Lc2 + Ws2, p2[1] + Ls2 - Wc2), (p2[0] + Lc2 - Ws2, p2[1] + Ls2 + Wc2), (p2[0] - Lc2 - Ws2, p2[1] - Ls2 + Wc2), (p2[0] - Lc2 + Ws2, p2[1] - Ls2 - Wc2)])
     return polygon1.intersects(polygon2)
 
 class autotest():
