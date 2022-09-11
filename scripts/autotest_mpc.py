@@ -330,7 +330,7 @@ class autotest():
             rospy.set_param("/init_clcbs/num_agent", self.num_agent)
             TA_launch = None
             clcbs_launch = None
-            if(test_sys == "TA+CLCBS+MPC"):
+            if(test_sys == "TA+CLCBS+MPC" or test_sys == "TA+NHTTC"):
                 rospy.set_param("mushr_coordination/num_agent", self.num_agent)
                 rospy.set_param("mushr_coordination/car1/name", "car1")
                 rospy.set_param("mushr_coordination/car1/color","FF0000")
@@ -361,7 +361,7 @@ class autotest():
             print("starting CLCBS")
             time.sleep(1)
 
-            if(test_sys == "NHTTC"):
+            if(test_sys == "NHTTC" or test_sys == "TA+NHTTC"):
                 launchfile = self.launchfile_nhttc + str(self.num_agent) + ".launch"
             else:
                 launchfile = self.launchfile_mpc + str(self.num_agent) + ".launch"
@@ -402,7 +402,7 @@ class autotest():
                                                           process_listeners=[ProcessListener()])
                 launch.start()  # launch the damn thing
                 time.sleep(5)
-                if(test_sys == "TA+CLCBS+MPC"):
+                if(test_sys == "TA+CLCBS+MPC" or test_sys == "TA+NHTTC"):
                     self.init_planner(no_TA = False)
                 else:
                     self.init_planner(no_TA = True)
@@ -411,12 +411,12 @@ class autotest():
                 self.sub_unsub(sub=False, goal_listen = True)
 
                 wait_start = time.time()
-                while(not self.plan_pub and test_sys != "NHTTC"):
+                while(not self.plan_pub and test_sys != "NHTTC" and test_sys != "TA+NHTTC"):
                     time.sleep(0.1)
                     collision = False
                     min_dist = 2
-                    if(time.time() - wait_start > 1000):
-                        if(test_sys == "TA+CLCBS+MPC"):
+                    if(time.time() - wait_start > 200):
+                        if(test_sys == "TA+CLCBS+MPC" or test_sys == "TA+NHTTC"):
                             self.init_planner(no_TA = False)
                         else:
                             self.init_planner(no_TA = True)
