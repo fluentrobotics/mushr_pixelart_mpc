@@ -98,6 +98,7 @@ class autotest():
         self.car_poses = np.zeros((self.num_agent,3))
         self.block_poses = np.zeros((self.num_agent,2))
         self.block_dist = np.zeros(self.num_agent)
+        self.block_angle = np.zeros(self.num_agent)
         self.finished = np.zeros(self.num_agent)  # storing goal-reach status of each car
         self.deadlock = np.zeros(self.num_agent)
         self.time_error = np.zeros(self.num_agent)
@@ -111,6 +112,7 @@ class autotest():
         self.recovery = np.zeros((self.N,2))
         self.CTE_list = np.zeros(self.N)
         self.block_dist_list = np.zeros(self.N)
+        self.block_angle_list = np.zeros(self.N)
         self.min_dist_list = np.zeros(self.N)
         self.time_list = np.zeros(self.N)
         self.collision_log = np.zeros(self.N)
@@ -121,7 +123,7 @@ class autotest():
                                            Marker, self.marker_cb, i, queue_size = 10)
             self.marker_subs.append(sub_marker)
 
-        self.timeout = 100 # 60 second time out
+        self.timeout = 50 # 60 second time out
         
 
     def adjust_launch_file(self, filename, bagdir, i, sys):
@@ -160,17 +162,22 @@ class autotest():
         _,_, self.car_poses[i,2] = quaternion_to_angle(msg.pose.orientation)
         for j in range(self.num_agent):
             dist = np.linalg.norm(self.car_poses[i,:2] - self.car_poses[j,:2])
-            if(self.min_dist > dist and j!=i):
-                self.min_dist = dist  # keep track of min distance between any 2 cars
-                if(dist < 0.4 and dist > 0.1):
-                    self.collision = check_collision_rectangle(self.car_poses[i,:], self.car_poses[j,:])
-                    if(self.collision):
-                        print("collision")
+            if (j != i and dist > 0):
+                if (dist < 0.4):
+                    collision = check_collision_rectangle(self.car_poses[i,:], self.car_poses[j,:])
+                    if (collision):
+                        # print("collision")
+                        self.collision = True
+                if (dist < self.min_dist):
+                    self.min_dist = dist  # keep track of min distance between any 2 cars
 
         dist = np.linalg.norm(self.car_poses[i,:2] - self.block_poses[i])
         if(self.block_dist[i] > dist):
             self.block_dist[i] = dist
             # print(self.block_dist[i])
+            if (dist < 0.15): # block pickup success threshold
+                mod = np.fmod(self.car_poses[i, 2], np.pi / 2)
+                self.block_angle[i] = min(mod, np.pi / 2 - mod)
 
     def goal_callback(self, msg):
         self.plan_pub = True  # plan has been published
@@ -420,7 +427,8 @@ class autotest():
                 start_time = time.time()  # note the start time
                 
                 self.car_poses = np.zeros((self.num_agent,3))
-                self.block_dist = np.ones(self.num_agent)*10
+                self.block_dist = np.ones(self.num_agent) * 10
+                self.block_angle = np.ones(self.num_agent) * 10
                 self.finished = np.zeros(self.num_agent)  # reset the finished status
                 self.deadlock = np.zeros(self.num_agent)
                 self.cte = np.zeros(self.num_agent)
@@ -441,6 +449,7 @@ class autotest():
                 self.time_list[i] = makespan_time #self.time_error.mean()
                 self.CTE_list[i] = self.cte.mean()
                 self.block_dist_list[i] = np.max(self.block_dist)
+                self.block_angle_list[i] = np.max(self.block_angle)
                 self.min_dist_list[i] = self.min_dist
                 self.deadlock_log[i] = self.deadlock.any() == 1
                 if(self.deadlock.all()):
@@ -462,6 +471,7 @@ class autotest():
             raw_data.append(self.time_list)
             raw_data.append(self.min_dist_list)
             raw_data.append(self.deadlock_log)
+            raw_data.append(self.block_angle_list)
             # change this
             np.save(bagdir + "/output_raw.npy", raw_data)
             files = os.listdir(bagdir)
