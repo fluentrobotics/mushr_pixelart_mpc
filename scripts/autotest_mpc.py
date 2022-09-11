@@ -66,7 +66,7 @@ def check_collision_rectangle(p1,p2):
 
 class autotest():
     """autotest class"""
-    def __init__(self, yaml_file):
+    def __init__(self, yaml_file, bench_name=None):
         config = None
         with open(yaml_file) as f:
             config = yaml.safe_load(f)
@@ -78,7 +78,7 @@ class autotest():
         for name in name_dict:
             self.sys_type.append(name_dict[name])
 
-        self.bench_name = config["bench_name"]
+        self.bench_name = config["bench_name"] if bench_name is None else bench_name
 
         self.launchfile_mpc = config["launchfile_mpc"]
         self.launchfile_nhttc = config["launchfile_nhttc"]
@@ -487,5 +487,9 @@ class autotest():
             if(TA_launch is not None):
                 TA_launch.shutdown()
 
-test = autotest("/home/stark/catkin_mushr/src/mushr_pixelart_mpc/config/autotest.yaml")
-test.run_autotest()
+# test = autotest("/home/stark/catkin_mushr/src/mushr_pixelart_mpc/config/autotest.yaml")
+# test.run_autotest()
+
+for i in range(6):
+    test = autotest("/home/stark/catkin_mushr/src/mushr_pixelart_mpc/config/autotest.yaml", "ex" + str(i + 1))
+    test.run_autotest()
