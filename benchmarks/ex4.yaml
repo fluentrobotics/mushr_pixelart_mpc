@@ -3,20 +3,20 @@ num_waypoint: 2
 scale: 4
 minx: 0
 miny: 0
-maxx: 3
-maxy: 5
+maxx: 4
+maxy: 6
 randomness: [0, 0, 0]
 
 car1:
   start: [2, 0, 1.57]
   waypoints: [
     [0.75, 2, 1.57],
-    [0, 5, 1.7]
+    [0, 6, 1.7]
   ]
 
 car2:
   start: [0.5, 0, 1.57]
   waypoints: [
     [1.6, 2.5, 1.57],
-    [3, 5, 0.8]
+    [4, 6, 0.8]
   ]
