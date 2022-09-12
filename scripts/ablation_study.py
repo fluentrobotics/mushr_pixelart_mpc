@@ -23,7 +23,7 @@ output = []
 labels = config["sys_name"]
 colors = ["red", "purple", "blue", "green"]
 block_tolerance = 0.15
-block_angle_tolerance = np.pi / 6
+block_angle_tolerance = np.pi / 8
 
 sys_type = []
 name_dict = config["sys_name"]
