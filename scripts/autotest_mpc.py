@@ -118,11 +118,6 @@ class autotest():
         self.collision_log = np.zeros(self.N)
         self.deadlock_log = np.zeros(self.N)
 
-        for i in range(4):
-            sub_marker = rospy.Subscriber("/car"+ str(i+1) + "/marker",
-                                           Marker, self.marker_cb, i, queue_size = 10)
-            self.marker_subs.append(sub_marker)
-
         self.timeout = 50 # 60 second time out
         
 
@@ -208,10 +203,16 @@ class autotest():
         elif goal_listen:
             self.goal_sub = rospy.Subscriber("/car1/waypoints",
                                              PoseArray, self.goal_callback)  # subscribe to car-pose to check collisions for first car (plans pubbed simultaneously)
+
+            for i in range(self.num_agent):
+                sub_marker = rospy.Subscriber("/car"+ str(i+1) + "/marker",
+                                              Marker, self.marker_cb, i, queue_size = 10)
+                self.marker_subs.append(sub_marker)
         else:
             for i in range(self.num_agent):
                 self.subs[i].unregister()
                 self.subs_[i].unregister()
+                self.marker_subs[i].unregister()
             self.goal_sub.unregister()
 
     def init_planner(self, no_TA):
