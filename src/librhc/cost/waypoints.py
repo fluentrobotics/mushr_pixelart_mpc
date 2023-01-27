@@ -157,7 +157,7 @@ class Waypoints:
         return torch.sum(2 - dist / thres, (1, 2))
 
 
-    def apply(self, poses, goal, path, car_pose):
+    def apply(self, poses, goal, path, gear_changes, car_pose):
         """
         Args:
         poses [(K, T, 3) tensor] -- Rollout of T positions
@@ -183,7 +183,10 @@ class Waypoints:
         distance_lookahead = self.horizon_dist
 
         # calculate closest index to car position
-        ulim = min(self.target_index + 15, len(path))
+        gear_change_thresh = 0.07  # TODO make configurable
+        if len(gear_changes) > 1 and np.linalg.norm(path[gear_changes[0][0], :2] - path[self.target_index, :2]) < gear_change_thresh and np.linalg.norm(path[gear_changes[0][0], :2] - car_pose[:2]) < gear_change_thresh:
+            gear_changes.pop(0)
+        ulim = min(self.target_index + 15, len(path), gear_changes[0][0] + 1)
         llim = max(self.target_index, 0)
         diff = np.sqrt(
             ((path[llim:ulim, 0] - car_pose[0]) ** 2) + ((path[llim:ulim, 1] - car_pose[1]) ** 2)

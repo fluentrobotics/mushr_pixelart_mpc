@@ -170,7 +170,7 @@ class Dispersion:
             ([:, :, 0] is the desired speed, [:, :, 1] is the control delta)
         """
         # scale the velocity but preserve sign
-        self.ctrls[:, :, 0] = velocity * np.sign(self.ctrls[:, :, 0])
+        self.ctrls[:, :, 0] = velocity * np.abs(np.sign(self.ctrls[:, :, 0]))
         # print(np.where(self.ctrls[:,:,0] == 0))
         # self.ctrls[:,:,0][self.ctrls[:,:,0] < 0] = 0  # prevent reverse
         # print(self.ctrls[:,:,0])

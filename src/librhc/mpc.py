@@ -47,12 +47,13 @@ class MPC:
             self.kinematics.reset()
             self.cost.reset()
 
-    def step(self, state, path, car_pose):
+    def step(self, state, path, gear_changes, car_pose):
         """
         Args:
         state [(3,) tensor] -- Current position in "world" coordinates
         TODO
         path --
+        gear_changes -- list of path indices where direction changes forward <-> reverse and the corresponding change
         car_pose --
         """
         assert state.size() == (3,)
@@ -73,6 +74,8 @@ class MPC:
         rollout = None
         for i in range(1):
             v = min( self.desired_speed/(i+1), self.desired_speed * (self.dist_to_goal(state) / (self.dist_horizon)))
+            if gear_changes[0][1]:
+                v *= -1  # check backwards trajectories in second loop iteration
             trajs = self.trajgen.get_control_trajectories(v)
             assert trajs.size() == (self.K, self.T, 2)
 
@@ -80,7 +83,7 @@ class MPC:
                 cur_x = self.rollouts[:, t - 1]
                 self.rollouts[:, t] = self.kinematics.apply(cur_x, trajs[:, t - 1])
 
-            costs = self.cost.apply(self.rollouts, g, path, car_pose)
+            costs = self.cost.apply(self.rollouts, g, path, gear_changes, car_pose)
             result, idx = self.trajgen.generate_control(trajs, costs)
             if(i < 1):
                 min_cost = costs[idx]

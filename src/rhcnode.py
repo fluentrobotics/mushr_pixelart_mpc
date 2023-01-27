@@ -51,6 +51,7 @@ class RHCNode(rhcbase.RHCBase):
         self.do_profile = self.params.get_bool("profile", default=False)
         self.agents = []
         self.agent_paths = []
+        self.gear_changes = []
         self.own_index = None
 
     def start_profile(self):
@@ -125,9 +126,9 @@ class RHCNode(rhcbase.RHCBase):
                 before = rospy.get_time()
                 self.rhctrl.cost.set_multi_agent_stuff(self.agents, self.agent_paths, self.own_index)  ## CHANGED -> Send multi-agent stuff related info straight to cost
                 self.rhctrl.cost.time_now = time.time() - self.start_time  # set the time in rhctrl
-                result = self.rhctrl.step(ip, path, car_pose)
+                result = self.rhctrl.step(ip, path, self.gear_changes, car_pose)
                 total = rospy.get_time() - before
-                print(total)
+                # print(total)
                 return result
             self.logger.err("Shouldn't get here: run_loop")
 
@@ -324,6 +325,8 @@ class RHCNode(rhcbase.RHCBase):
     # CHANGED
     def path_cb(self, msg):
         path = []
+        self.gear_changes = []
+        curr_gear = 1  # 1 for forwards, -1 for backwards
         print("hit")
         time_stamp = 0
         time_step = 1.0  # calced
@@ -339,9 +342,14 @@ class RHCNode(rhcbase.RHCBase):
                 ]
             )
             path.append(np.array([point.x, point.y, theta[2], time_stamp]))
-            time_stamp += point.z*1e3*time_step
+            time_stamp += abs(point.z)*1e3*time_step
+            if point.z * curr_gear < 0:
+                curr_gear *= -1
+                self.gear_changes.append((len(path) - 1, curr_gear == 1))
             goal = self.dtype(utils.rospose_to_posetup(pose))
-        self.path = np.array(path)
+        self.gear_changes.append((len(path) - 1, curr_gear == -1))
+        path = np.array(path)
+        self.path = path
         self.start_time = time.time()
         self.ready_event.wait()
         if not self.rhctrl.set_goal(goal):
