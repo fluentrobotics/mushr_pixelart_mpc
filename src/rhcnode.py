@@ -258,7 +258,7 @@ class RHCNode(rhcbase.RHCBase):
                 ]
             )
             path.append([point.x, point.y, theta[2], time_stamp])
-            time_stamp += point.z*1e3*time_step
+            time_stamp += abs(point.z)*1e3*time_step
         path = np.array(path)
         self.agent_paths[i] = path
     ## CHANGED ---
