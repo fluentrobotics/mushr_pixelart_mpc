@@ -95,10 +95,11 @@ class autotest():
         self.N = config["num_iterations"]
         self.plan_pub = False
         self.num_agent = 4
+        self.num_task = 4
         self.car_poses = np.zeros((self.num_agent,3))
-        self.block_poses = np.zeros((self.num_agent,2))
-        self.block_dist = np.zeros(self.num_agent)
-        self.block_angle = np.zeros(self.num_agent)
+        self.block_poses = np.zeros((self.num_agent, 1 + (self.num_task - 1) / self.num_agent, 2)) + 1e9
+        self.block_dist = np.zeros(self.num_agent) + 1e9
+        self.block_angle = np.zeros(self.num_agent) + 1e9
         self.finished = np.zeros(self.num_agent)  # storing goal-reach status of each car
         self.deadlock = np.zeros(self.num_agent)
         self.time_error = np.zeros(self.num_agent)
@@ -166,7 +167,7 @@ class autotest():
                 if (dist < self.min_dist):
                     self.min_dist = dist  # keep track of min distance between any 2 cars
 
-        dist = np.linalg.norm(self.car_poses[i,:2] - self.block_poses[i])
+        dist = np.amin(np.linalg.norm(self.car_poses[i,:2] - self.block_poses[i], axis=1))
         if(self.block_dist[i] > dist):
             self.block_dist[i] = dist
             # print(self.block_dist[i])
@@ -186,9 +187,10 @@ class autotest():
         self.time_error[i] = msg.pose.orientation.z  # keep updating time error until timeout
 
     def marker_cb(self, msg, i):
-        if(msg.type == Marker.CUBE):  
-            self.block_poses[i,0] = msg.pose.position.x
-            self.block_poses[i,1] = msg.pose.position.y
+        if(msg.type == Marker.CUBE):
+            count = np.argmin(self.block_poses[i, :, 0])
+            self.block_poses[i, count, 0] = msg.pose.position.x
+            self.block_poses[i, count, 1] = msg.pose.position.y
     
 
     def sub_unsub(self, sub, goal_listen):
@@ -224,6 +226,7 @@ class autotest():
             exit()
 
         num_agent = config["num_agent"]
+        num_task = config["num_task"]
         num_waypoint = config["num_waypoint"]
         randomness = config["randomness"]
         x_min = config["minx"]
@@ -269,7 +272,7 @@ class autotest():
             carmsg.header.frame_id = "/map"
             carmsg.header.stamp = now
 
-            start_pose = config["car" + str(i + 1)]["start"]
+            start_pose = config["car" + str(i + 1)]
             carmsg.pose.position.x = min(x_max, max(x_min, start_pose[0] + random.uniform(-randomness[0], randomness[0])))
             carmsg.pose.position.y = min(y_max, max(y_min, start_pose[1] + random.uniform(-randomness[1], randomness[1])))
             carmsg.pose.position.z = 0.0
@@ -303,9 +306,9 @@ class autotest():
         goalmsg.miny = y_min
         goalmsg.maxx = x_max
         goalmsg.maxy = y_max
-        for i in range(num_agent):
+        for i in range(num_task):
             goalmsg.goals.append(PoseArray())
-            waypoints = config["car" + str(i + 1)]["waypoints"]
+            waypoints = config["task" + str(i + 1)]
             for j in range(num_waypoint):
                 goal = Pose()
                 goal.position.x = waypoints[j][0]
@@ -328,6 +331,7 @@ class autotest():
                 exit()
 
             self.num_agent = config["num_agent"]
+            self.num_task = config["num_task"]
             rospy.set_param("/init_clcbs/num_agent", self.num_agent)
             TA_launch = None
             clcbs_launch = None
@@ -392,7 +396,7 @@ class autotest():
 
             for i in range(self.N):
                 print("iteration " + str(i) + "starting")
-                self.block_poses = np.zeros((self.num_agent,2))
+                self.block_poses = np.zeros((self.num_agent, 1 + (self.num_task - 1) / self.num_agent, 2)) + 1e9
 
                 self.adjust_launch_file(launchfile, bagdir, i, test_sys)
                 process_generate_running = True
@@ -428,9 +432,10 @@ class autotest():
                 start_time = time.time()  # note the start time
                 
                 self.car_poses = np.zeros((self.num_agent,3))
-                self.block_dist = np.ones(self.num_agent) * 10
-                self.block_angle = np.ones(self.num_agent) * 10
+                self.block_dist = np.ones(self.num_agent) * 1e9
+                self.block_angle = np.ones(self.num_agent) * 1e9
                 self.finished = np.zeros(self.num_agent)  # reset the finished status
+                self.finished[self.block_poses[:, 0, 0] >= 1e8] = 1
                 self.deadlock = np.zeros(self.num_agent)
                 self.cte = np.zeros(self.num_agent)
                 self.time_error = np.zeros(self.num_agent)
@@ -449,8 +454,8 @@ class autotest():
                 print("success, collision: ", self.success[i], self.collision)
                 self.time_list[i] = makespan_time #self.time_error.mean()
                 self.CTE_list[i] = self.cte.mean()
-                self.block_dist_list[i] = np.max(self.block_dist)
-                self.block_angle_list[i] = np.max(self.block_angle)
+                self.block_dist_list[i] = np.amax(self.block_dist[self.block_dist < 1e9])
+                self.block_angle_list[i] = np.amax(self.block_angle[self.block_angle < 1e9])
                 self.min_dist_list[i] = self.min_dist
                 self.deadlock_log[i] = self.deadlock.any() == 1
                 if(self.deadlock.all()):
