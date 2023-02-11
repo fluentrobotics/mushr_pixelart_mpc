@@ -184,7 +184,8 @@ class Waypoints:
 
         # calculate closest index to car position
         gear_change_thresh = 0.07  # TODO make configurable
-        if len(gear_changes) > 1 and np.linalg.norm(path[gear_changes[0][0], :2] - path[self.target_index, :2]) < gear_change_thresh and np.linalg.norm(path[gear_changes[0][0], :2] - car_pose[:2]) < gear_change_thresh:
+        gear_dot_thresh = 0.05 * (1 if gear_changes[0][1] else -1)
+        if len(gear_changes) > 1 and np.linalg.norm(path[gear_changes[0][0], :2] - path[self.target_index, :2]) < gear_change_thresh and (np.linalg.norm(path[gear_changes[0][0], :2] - car_pose[:2]) < gear_change_thresh or np.dot(np.array([np.sin(path[gear_changes[0][0], 2]), np.cos(path[gear_changes[0][0], 2])]), path[gear_changes[0][0], :2] - car_pose[:2]) < gear_dot_thresh):
             gear_changes.pop(0)
         ulim = min(self.target_index + 15, len(path), gear_changes[0][0] + 1)
         llim = max(self.target_index, 0)

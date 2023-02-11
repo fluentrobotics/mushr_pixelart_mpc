@@ -58,7 +58,7 @@ class MPC:
         """
         assert state.size() == (3,)
 
-        if self.at_goal(state):
+        if self.at_goal(state, path):
             return None, None
 
         with self.goal_lock:
@@ -73,7 +73,7 @@ class MPC:
         out = None
         rollout = None
         for i in range(1):
-            v = min( self.desired_speed/(i+1), self.desired_speed * (self.dist_to_goal(state) / (self.dist_horizon)))
+            v = min( self.desired_speed/(i+1), self.desired_speed * (self.dist_to_goal(state, path) / (self.dist_horizon)))
             if gear_changes[0][1]:
                 v *= -1  # check backwards trajectories in second loop iteration
             trajs = self.trajgen.get_control_trajectories(v)
@@ -110,13 +110,13 @@ class MPC:
             self.goal = goal
             return self.cost.set_goal(goal)
 
-    def dist_to_goal(self, state):
+    def dist_to_goal(self, state, path):
         with self.goal_lock:
             if self.goal is None:
                 return False
-        return self.goal[:2].dist(state[:2])
+        return self.goal[:2].dist(state[:2]) if self.cost.target_index + 15 < len(path) else self.dist_horizon
 
-    def at_goal(self, state):
+    def at_goal(self, state, path):
         """
         Args:
         state [(3,) tensor] -- Current position in "world" coordinates
@@ -125,7 +125,7 @@ class MPC:
             if self.goal is None:
                 return False
         dist = self.goal[:2].sub(state[:2]).abs_()
-        return dist.lt(self.goal_threshold).min() == 1
+        return dist.lt(self.goal_threshold).min() == 1 and self.cost.target_index + 15 >= len(path)
 
     def get_all_rollouts(self):
         return self.rollouts

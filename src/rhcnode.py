@@ -92,7 +92,7 @@ class RHCNode(rhcbase.RHCBase):
                 # For experiments. If the car is at the goal, notify the
                 # experiment tool
                 self.publish_expr_state()
-                if self.rhctrl.at_goal(self.inferred_pose()):
+                if self.rhctrl.at_goal(self.inferred_pose(), self.path):
                     for i in range(10):
                         self.publish_expr_state()  # sometimes the car hits goal right after publishing. We don't wanna miss it.
                     self.expr_at_goal.publish(Empty())
@@ -107,7 +107,7 @@ class RHCNode(rhcbase.RHCBase):
         output_msg.header.frame_id = "/map";
         output_msg.pose.position.x = 0
         output_msg.pose.position.y = 0
-        output_msg.pose.position.z = float(self.rhctrl.at_goal(self.inferred_pose()));
+        output_msg.pose.position.z = float(self.rhctrl.at_goal(self.inferred_pose(), self.path));
         output_msg.pose.orientation.x = 0
         output_msg.pose.orientation.y = np.linalg.norm(self.rhctrl.goal[:2].sub(self.inferred_pose()[:2]).abs_())
         output_msg.pose.orientation.z = self.rhctrl.cost.time_now/self.path[-1,3];
@@ -345,7 +345,10 @@ class RHCNode(rhcbase.RHCBase):
             time_stamp += abs(point.z)*1e3*time_step
             if point.z * curr_gear < 0:
                 curr_gear *= -1
-                self.gear_changes.append((len(path) - 1, curr_gear == 1))
+                if len(self.gear_changes) > 0 and self.gear_changes[-1][0] == len(path) - 2:
+                    self.gear_changes.pop()
+                else:
+                    self.gear_changes.append((len(path) - 1, curr_gear == 1))
             goal = self.dtype(utils.rospose_to_posetup(pose))
         self.gear_changes.append((len(path) - 1, curr_gear == -1))
         path = np.array(path)
