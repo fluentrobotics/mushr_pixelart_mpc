@@ -296,7 +296,7 @@ class autotest():
         if(no_TA):
             goalmsg = GoalPoseArray_clcbs()
             goalmsg.num_agent = num_agent
-            goalmsg.num_waypoint = num_waypoint
+            goalmsg.num_waypoint = ((num_task - 1) / num_agent + 1) * num_waypoint
         else:
             goalmsg = GoalPoseArray_coord()
         goalmsg.header.frame_id = "/map"
@@ -316,7 +316,22 @@ class autotest():
                 goal.position.z = 0.0
                 goal.orientation = angle_to_quaternion(waypoints[j][2])
                 goalmsg.goals[i].poses.append(goal)
-        print("tasks:", len(goalmsg.goals[i].poses))
+        if no_TA:
+            for i in range(num_agent):
+                goalmsg.goals.append(PoseArray())
+            for i in range(num_task):
+                waypoints = config["task" + str(i + 1)]
+                for j in range(num_waypoint):
+                    goal = Pose()
+                    goal.position.x = waypoints[j][0]
+                    goal.position.y = waypoints[j][1]
+                    goal.position.z = 0.0
+                    goal.orientation = angle_to_quaternion(waypoints[j][2])
+                    goalmsg.goals[i % num_agent].poses.append(goal)
+            for i in range(num_agent - num_task % num_agent):
+                for j in range(num_waypoint):
+                    goalmsg.goals[-i - 1].poses.append(goalmsg.goals[-i - 1].poses[-1])
+        print("tasks:", len(goalmsg.goals[0].poses))
         goal_pub.publish(goalmsg)
 
     def run_autotest(self):
