@@ -306,16 +306,6 @@ class autotest():
         goalmsg.miny = y_min
         goalmsg.maxx = x_max
         goalmsg.maxy = y_max
-        for i in range(num_task):
-            goalmsg.goals.append(PoseArray())
-            waypoints = config["task" + str(i + 1)]
-            for j in range(num_waypoint):
-                goal = Pose()
-                goal.position.x = waypoints[j][0]
-                goal.position.y = waypoints[j][1]
-                goal.position.z = 0.0
-                goal.orientation = angle_to_quaternion(waypoints[j][2])
-                goalmsg.goals[i].poses.append(goal)
         if no_TA:
             for i in range(num_agent):
                 goalmsg.goals.append(PoseArray())
@@ -330,7 +320,27 @@ class autotest():
                     goalmsg.goals[i % num_agent].poses.append(goal)
             for i in range(num_agent - num_task % num_agent):
                 for j in range(num_waypoint):
-                    goalmsg.goals[-i - 1].poses.append(goalmsg.goals[-i - 1].poses[-1])
+                    if len(goalmsg.goals[-i - 1].poses) > 0:
+	                    goalmsg.goals[-i - 1].poses.append(goalmsg.goals[-i - 1].poses[-1])
+                    else:
+                        waypoint = config["car" + str(num_agent - i)]
+                        goal = Pose()
+                        goal.position.x = waypoint[0]
+                        goal.position.y = waypoint[1]
+                        goal.position.z = 0.0
+                        goal.orientation = angle_to_quaternion(waypoint[2])
+                        goalmsg.goals[-i - 1].poses.append(goal)
+        else:
+            for i in range(num_task):
+                goalmsg.goals.append(PoseArray())
+                waypoints = config["task" + str(i + 1)]
+                for j in range(num_waypoint):
+                    goal = Pose()
+                    goal.position.x = waypoints[j][0]
+                    goal.position.y = waypoints[j][1]
+                    goal.position.z = 0.0
+                    goal.orientation = angle_to_quaternion(waypoints[j][2])
+                    goalmsg.goals[i].poses.append(goal)
         print("tasks:", len(goalmsg.goals[0].poses))
         goal_pub.publish(goalmsg)
 
@@ -450,7 +460,8 @@ class autotest():
                 self.block_dist = np.ones(self.num_agent) * 1e9
                 self.block_angle = np.ones(self.num_agent) * 1e9
                 self.finished = np.zeros(self.num_agent)  # reset the finished status
-                self.finished[self.block_poses[:, 0, 0] >= 1e8] = 1
+                if test_sys != "NHTTC":
+                    self.finished[self.block_poses[:, 0, 0] >= 1e8] = 1
                 self.deadlock = np.zeros(self.num_agent)
                 self.cte = np.zeros(self.num_agent)
                 self.time_error = np.zeros(self.num_agent)
@@ -459,7 +470,7 @@ class autotest():
 
                 self.min_dist = 2
                 
-                while(self.finished.all() != 1 and time.time() - start_time < self.timeout):
+                while(self.finished.all() != 1 and time.time() - start_time < self.timeout * ((self.num_task - 1) / self.num_agent + 1)):
                     rospy.sleep(1) # check once per second if all cars have reached their goal or if we have time-out
                 if(self.finished.all() != 1): # or self.collision):  # happens if the cars don't finish within some stipulated time, usually due to deadlock
                     self.success[i] = 0 # failure
@@ -469,8 +480,12 @@ class autotest():
                 print("success, collision: ", self.success[i], self.collision)
                 self.time_list[i] = makespan_time #self.time_error.mean()
                 self.CTE_list[i] = self.cte.mean()
-                self.block_dist_list[i] = np.amax(self.block_dist[self.block_dist < 1e9])
-                self.block_angle_list[i] = np.amax(self.block_angle[self.block_angle < 1e9])
+                self.block_dist_list[i] = 10
+                self.block_angle_list[i] = 10
+                if np.any(self.block_dist < 1e9):
+                    self.block_dist_list[i] = np.amax(self.block_dist[self.block_dist < 1e9])
+                if np.any(self.block_angle < 1e9):
+                    self.block_angle_list[i] = np.amax(self.block_angle[self.block_angle < 1e9])
                 self.min_dist_list[i] = self.min_dist
                 self.deadlock_log[i] = self.deadlock.any() == 1
                 if(self.deadlock.all()):
