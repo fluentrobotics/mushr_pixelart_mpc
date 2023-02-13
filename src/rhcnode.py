@@ -345,10 +345,7 @@ class RHCNode(rhcbase.RHCBase):
             time_stamp += abs(point.z)*1e3*time_step
             if point.z * curr_gear < 0:
                 curr_gear *= -1
-                if len(self.gear_changes) > 0 and self.gear_changes[-1][0] == len(path) - 2:
-                    self.gear_changes.pop()
-                else:
-                    self.gear_changes.append((len(path) - 1, curr_gear == 1))
+                self.gear_changes.append((len(path) - 1, curr_gear == 1))
             goal = self.dtype(utils.rospose_to_posetup(pose))
         self.gear_changes.append((len(path) - 1, curr_gear == -1))
         path = np.array(path)
