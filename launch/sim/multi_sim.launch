@@ -8,9 +8,11 @@
     <arg name="car_pose" default="/car_pose" />
 	<arg name="map_server" default="1" />
 
+
     <group if="$(arg map_server)">
-        <include file="$(find mushr_sim)/launch/map_server.launch" />
+        <include file="$(find mushr_base)/launch/includes/map_server.launch" />
     </group>
+    
 
     <group ns="$(arg car1_name)">
 		<include file="$(find mushr_sim)/launch/single_car.launch">

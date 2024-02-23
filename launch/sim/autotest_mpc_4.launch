@@ -10,11 +10,15 @@
  <arg default="1" name="map_server"/>
  <arg default="clcbs_data_0" name="bag_name"/>
  <arg default="clcbs_data_test_49" name="record_name"/>
- <arg default="/home/stark/catkin_mushr/src/mushr_pixelart_mpc/bags/ex3/TAd+CLCBS+MPC" name="output_dir"/>
+ <arg default="bags/ex3/TAd+CLCBS+MPC" name="relative_dir"/>
+ <!--arg default="/home/jeeho/catkin_ws/src/mushr_pixelart_mpc/bags/ex3/TAd+CLCBS+MPC" name="output_dir"/-->
+ 
  <group if="$(arg map_server)">
   <include file="$(find mushr_sim)/launch/map_server.launch"/>
  </group>
- <node args="-a -o $(arg output_dir)/$(arg record_name).bag" name="rosbag_record" output="screen" pkg="rosbag" type="record"/>
+ <!--node args="-a -o $(arg output_dir)/$(arg record_name).bag" name="rosbag_record" output="screen" pkg="rosbag" type="record"/-->
+ <node args="-a -o $(find mushr_pixelart_mpc)/$(arg relative_dir)/$(arg record_name).bag" name="rosbag_record" output="screen" pkg="rosbag" type="record"/>
+
  <group ns="$(arg car1_name)">
   <include file="$(find mushr_sim)/launch/single_car.launch">
    <arg name="car_name" value="$(arg car1_name)"/>

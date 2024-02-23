@@ -161,7 +161,8 @@ class Dispersion:
 
         assert len(visited) == prune_size
         ctrls = self.dtype(self.K, self.T, self.NCTRL)
-        return ctrls.copy_(ms_ctrls[visited.keys()])
+        #print(visited.keys())
+        return ctrls.copy_(ms_ctrls[list(visited.keys())]) #Jeeho edit
 
     def get_control_trajectories(self, velocity):
         """

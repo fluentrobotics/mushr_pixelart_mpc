@@ -6,8 +6,34 @@ import os
 import numpy as np
 import torch
 
-import cache
+#import cache
 import rhctensor
+
+#import os
+
+
+def get_root_cache_dir(params):
+    path = params.get_str("cache", default="~/.cache/mushr_rhc/")
+    path = os.path.expanduser(path)
+
+    if not os.path.isdir(path):
+        os.mkdir(path)
+
+    return path
+
+
+def get_cache_dir(params, path):
+    root = get_root_cache_dir(params)
+    fullpath = os.path.join(root, path)
+
+    if not os.path.isdir(fullpath):
+        os.makedirs(fullpath)
+
+    return fullpath
+
+
+def get_cache_map_dir(params, map):
+    return get_cache_dir(params, map.name)
 
 
 def world2map(mapdata, poses, out=None):
@@ -71,7 +97,8 @@ def load_permissible_region(params, map):
     get_map is a function that lazily gets all the mapdata
         * only use if map data is needed otherwise use cached data
     """
-    path = cache.get_cache_map_dir(params, map)
+    #path = cache.get_cache_map_dir(params, map)
+    path = get_cache_map_dir(params, map)
     perm_reg_file = os.path.join(path, "perm_region.npy")
 
     if os.path.isfile(perm_reg_file):

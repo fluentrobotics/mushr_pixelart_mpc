@@ -191,8 +191,12 @@ class RHCNode(rhcbase.RHCBase):
     ## CHANGED ----
     def check_new_agents(self):
         count = 0
+        print('a')
         name_list = []
+        print('b')
         start = time.time()
+        print('c')
+        print('count= ' + str(count) + 'dtime: ' + str(time.time() - start) )
         while(count < 2 or time.time() - start < 1):
             try:
                 topics = rospy.get_published_topics()
@@ -227,6 +231,7 @@ class RHCNode(rhcbase.RHCBase):
                                 print("found car", name[1])
             except:
                 time.sleep(0.1)
+                print('d')
 
     def cb_general_pose(self, msg, i):
         theta = tf.transformations.euler_from_quaternion(
@@ -315,9 +320,11 @@ class RHCNode(rhcbase.RHCBase):
             m.points = map(lambda xy: Point(x=xy[0], y=xy[1]), pts)
 
             r, g, b = 0x36, 0xCD, 0xC4
-            m.colors = [ColorRGBA(r=r / 255.0, g=g / 255.0, b=b / 255.0, a=0.7)] * len(
-                m.points
-            )
+            #m.colors = [ColorRGBA(r=r / 255.0, g=g / 255.0, b=b / 255.0, a=0.7)] * len(
+            #    m.points
+            #)
+            m.colors = [ColorRGBA(r=r / 255.0, g=g / 255.0, b=b / 255.0, a=0.7) for _ in list(m.points)]
+
             m.scale.x = 0.05
             self.traj_chosen_pub.publish(m)
 
