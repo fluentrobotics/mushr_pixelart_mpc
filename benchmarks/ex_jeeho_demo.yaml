@@ -1,0 +1,22 @@
+num_agent: 2
+num_waypoint: 2
+scale: 2
+minx: 0
+miny: 0
+maxx: 4
+maxy: 6
+randomness: [0.0, 0.0, 0.0]
+
+mushr1:
+  start: [3, 0, 1.5708]
+  waypoints: [
+    [1, 2, 1.5708],
+    [1, 4.7, 1.5708]
+  ]
+
+mushr2:
+  start: [2, 6, -1.5708]
+  waypoints: [
+    [2.5, 1.9, -1.5708],
+    [0, 0, 3.1415]
+  ]
